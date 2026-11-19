@@ -6,11 +6,11 @@ const app = createApp();
 
 const server = app.listen(env.PORT, async () => {
     console.log(
-        `[api] listening on http://localhost:${env.PORT} (${env.NODE_ENV})`
+        `⚪ [api] listening on ${env.BACKEND_API_URL} PORT: ${env.PORT} - (${env.NODE_ENV})`
     );
 
     await prisma.$connect()
-    console.log("Database connected successfully.");
+    console.log("🟢 Database connected successfully.");
 });
 
 async function shutdown(signal: string) {
@@ -19,10 +19,10 @@ async function shutdown(signal: string) {
         try {
             await prisma.$disconnect();
         } catch (e) {
-            console.error("[api] prisma disconnect error:", e);
+            console.error("🔴 [api] prisma disconnect error:", e);
         }
         if (err) {
-            console.error("[api] server close error:", err);
+            console.error("🔴 [api] server close error:", err);
             process.exit(1);
         }
         process.exit(0);
@@ -34,9 +34,9 @@ process.on("SIGINT", () => void shutdown("SIGINT"));
 process.on("SIGTERM", () => void shutdown("SIGTERM"));
 
 process.on("unhandledRejection", (reason) => {
-    console.error("[api] unhandledRejection:", reason);
+    console.error("🔴 [api] unhandledRejection:", reason);
 });
 process.on("uncaughtException", (err) => {
-    console.error("[api] uncaughtException:", err);
+    console.error("🔴 [api] uncaughtException:", err);
     process.exit(1);
 });
