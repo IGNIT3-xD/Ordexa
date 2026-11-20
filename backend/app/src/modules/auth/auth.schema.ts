@@ -27,3 +27,28 @@ export const verifyEmailSchema = z.object({
         code: z.string().length(6, { error: "Verification code must be exactly 6 digits" }),
     }),
 });
+
+export const forgotPasswordSchema = z.object({
+  body: z.object({
+    email: z.email({ error: "Please provide a valid email address" }),
+  }),
+});
+
+export const verifyResetCodeSchema = z.object({
+  body: z.object({
+    email: z.email({ error: "Please provide a valid email address" }),
+    code: z.string().length(6, { error: "Verification code must be exactly 6 digits" }),
+  }),
+});
+
+export const resetPasswordSchema = z.object({
+  body: z.object({
+    newPassword: z
+      .string()
+      .min(8, { error: "Password must be at least 8 characters long" })
+      .regex(/[A-Z]/, { error: "Password must contain at least one uppercase letter" })
+      .regex(/[a-z]/, { error: "Password must contain at least one lowercase letter" })
+      .regex(/[0-9]/, { error: "Password must contain at least one number" })
+      .regex(/[^A-Za-z0-9]/, { error: "Password must contain at least one special character" }),
+  }),
+});
