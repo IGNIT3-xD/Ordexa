@@ -5,6 +5,7 @@ const EnvSchema = z.object({
     PORT: z.coerce.number().default(3000),
     DATABASE_URL: z.string().min(1),
     BACKEND_API_URL: z.string().min(1),
+    FRONTEND_URL: z.string().min(1),
 
     JWT_ACCESS_SECRET: z.string(),
     JWT_REFRESH_SECRET: z.string(),
@@ -13,11 +14,11 @@ const EnvSchema = z.object({
     CLOUDINARY_API_KEY: z.string(),
     CLOUDINARY_API_SECRET: z.string(),
 
-    SMTP_HOST: z.string().optional(),
-    SMTP_PORT: z.string().optional(),
-    SMTP_USER: z.string().optional(),
-    SMTP_PASS: z.string().optional(),
-    SMTP_SENDER_EMAIL: z.string().optional(),
+    SMTP_PORT: z.string(),
+    SMTP_USER: z.string(),
+    SMTP_HOST: z.string(),
+    SMTP_PASS: z.string(),
+    SMTP_EMAIL_SENDER: z.string(),
 
     REDIS_HOST: z.string(),
     REDIS_PORT: z.coerce.number(),

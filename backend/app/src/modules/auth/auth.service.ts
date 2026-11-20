@@ -3,7 +3,7 @@ import { prisma } from "../../lib/prisma";
 import { ApiError } from "../../utils/AppError";
 import type { ILoginInput, IRegisterInput } from "./auth.type";
 import { uploadToCloudinary } from "../../lib/cloudinary";
-import { sendVerificationEmail } from "../../lib/mailer";
+import { sendVerificationEmail, sendWelcomeEmail } from "../../lib/mailer";
 import { cleanupQueue } from "../../lib/queue";
 import { generateAccessToken, generateRefreshToken } from "../../lib/jwt";
 import { createHash, randomBytes } from "node:crypto";
@@ -47,7 +47,7 @@ export class AuthService {
         });
 
         // Send the code
-        await sendVerificationEmail(user.email, code);
+        await sendVerificationEmail(user.email, code, user.name || undefined);
 
         // Add delayed job to delete the user if not verified in 15 minutes (900,000 ms)
         await cleanupQueue.add(
@@ -78,6 +78,10 @@ export class AuthService {
             prisma.user.update({ where: { id: user.id }, data: { isVerified: true } }),
             prisma.verificationToken.deleteMany({ where: { userId: user.id } }),
         ]);
+
+        sendWelcomeEmail(user.email, user.name || undefined).catch(err => {
+            console.error("Failed to send welcome email:", err);
+        });
 
         return { message: "Email verified successfully. You can now log in." };
     }
