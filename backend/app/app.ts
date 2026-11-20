@@ -7,20 +7,27 @@ import cors from "cors";
 import { randomUUID } from "node:crypto";
 import { prisma } from "./src/lib/prisma";
 import { errorHandler } from "./src/middleware/error.middleware";
+import authRoutes from "./src/modules/auth/auth.routes";
+import cookieParser from "cookie-parser";
 
 export function createApp() {
     const app = express();
 
     app.disable("x-powered-by");
-    app.use(cors());
     app.use(express.json());
     app.use(express.urlencoded({ extended: true }));
+    app.use(cookieParser())
+    app.use(cors({
+        origin: "http://localhost:5000",
+        credentials: true,
+    }));
 
-    app.use((req: Request, res: Response, next: NextFunction) => {
-        const id = req.header("x-request-id") ?? randomUUID();
-        res.setHeader("x-request-id", id);
-        next();
+    // Routes
+    app.get("/api", (_req, res) => {
+        res.json({ message: "Ordexa API" });
     });
+
+    app.use("/api/auth", authRoutes);
 
     // Health check — pings the DB. 200 = all good, 503 = DB unreachable.
     app.get("/health", async (_req, res) => {
@@ -50,10 +57,6 @@ export function createApp() {
                 },
             });
         }
-    });
-
-    app.get("/api", (_req, res) => {
-        res.json({ message: "Ordexa API" });
     });
 
     // 404 Not found
