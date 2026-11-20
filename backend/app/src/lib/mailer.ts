@@ -48,3 +48,20 @@ export const sendWelcomeEmail = async (to: string, name?: string) => {
         html: html,
     });
 };
+
+export const sendPasswordResetEmail = async (to: string, code: string, name?: string) => {
+    if (!env.SMTP_HOST) {
+        console.log(`\n📧 [DEV] Password reset code for ${to} is: ${code}\n`);
+        return;
+    }
+
+    const templatePath = path.join(__dirname, "../templates/forgot-password.ejs");
+    const html = await ejs.renderFile(templatePath, { code, name });
+
+    await transporter.sendMail({
+        from: `${env.SMTP_EMAIL_SENDER}`,
+        to,
+        subject: "Reset your Ordexa Password",
+        html: html,
+    });
+};

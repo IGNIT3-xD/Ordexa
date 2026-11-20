@@ -87,3 +87,37 @@ export const refresh = asyncHandler(async (req: Request, res: Response) => {
 
     res.json({ message: "Token refreshed" });
 });
+
+export const forgotPassword = asyncHandler(async (req: Request, res: Response) => {
+    const { email } = req.body;
+    const result = await AuthService.forgotPassword(email);
+    res.json(result);
+});
+
+export const verifyResetCode = asyncHandler(async (req: Request, res: Response) => {
+    const { email, code } = req.body;
+
+    const { resetToken } = await AuthService.verifyResetCode(email, code);
+
+    res.cookie("resetToken", resetToken, {
+        httpOnly: true,
+        secure: env.NODE_ENV === "production",
+        sameSite: "strict",
+        maxAge: 10 * 60 * 1000, // 10 minutes (matches the JWT expiry)
+        path: "/api/auth/reset-password", // Only send to this specific route
+    });
+
+    res.json({ message: "Code verified. You may now set a new password." });
+});
+
+export const resetPassword = asyncHandler(async (req: Request, res: Response) => {
+    const { newPassword } = req.body;
+    const userId = (req as any).userId;
+
+    const result = await AuthService.resetPassword(userId, newPassword);
+
+    // Clear the reset token cookie
+    res.clearCookie("resetToken", { path: "/api/auth/reset-password" });
+
+    res.json(result);
+});

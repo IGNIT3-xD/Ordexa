@@ -3,10 +3,12 @@ import { prisma } from "../../lib/prisma";
 import { ApiError } from "../../utils/AppError";
 import type { ILoginInput, IRegisterInput } from "./auth.type";
 import { uploadToCloudinary } from "../../lib/cloudinary";
-import { sendVerificationEmail, sendWelcomeEmail } from "../../lib/mailer";
+import { sendPasswordResetEmail, sendVerificationEmail, sendWelcomeEmail } from "../../lib/mailer";
 import { cleanupQueue } from "../../lib/queue";
 import { generateAccessToken, generateRefreshToken } from "../../lib/jwt";
 import { createHash, randomBytes } from "node:crypto";
+import { env } from "../../config/env";
+import jwt from "jsonwebtoken";
 
 export class AuthService {
     static async register(data: IRegisterInput) {
@@ -168,11 +170,80 @@ export class AuthService {
 
         // Update session with new hash (Rotation)
         const newRefreshHash = createHash("sha256").update(newRefreshToken).digest("hex");
+
         await prisma.userSession.update({
             where: { id: session.id },
             data: { refreshHash: newRefreshHash, expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000) },
         });
 
         return { newAccessToken, newRefreshToken };
+    }
+
+    static async forgotPassword(email: string) {
+        const user = await prisma.user.findUnique({ where: { email } });
+
+        // SECURITY: Do not throw an error if the user doesn't exist.
+        // This prevents bad actors from guessing which emails are registered.
+        if (!user) {
+            return { message: "If that email exists, a reset code has been sent." };
+        }
+
+        const code = Math.floor(100000 + Math.random() * 900000).toString();
+        const expiresAt = new Date(Date.now() + 15 * 60 * 1000);
+
+        // Clean up any existing codes for this user to prevent spam
+        await prisma.passwordResetToken.deleteMany({ where: { userId: user.id } });
+
+        await prisma.passwordResetToken.create({
+            data: { token: code, userId: user.id, expiresAt },
+        });
+
+        await sendPasswordResetEmail(user.email, code, user.name || undefined);
+
+        return { message: "If that email exists, a reset code has been sent." };
+    }
+
+    static async verifyResetCode(email: string, code: string) {
+        const user = await prisma.user.findUnique({ where: { email } });
+
+        if (!user) throw new ApiError(400, "Invalid or expired code");
+
+        const record = await prisma.passwordResetToken.findFirst({
+            where: { userId: user.id, token: code },
+        });
+
+        if (!record || record.expiresAt < new Date()) {
+            throw new ApiError(400, "Invalid or expired code");
+        }
+
+        // Delete the code immediately so it can't be reused
+        await prisma.passwordResetToken.delete({ where: { id: record.id } });
+
+        // Generate a temporary JWT specifically for resetting the password
+        const resetToken = jwt.sign(
+            { userId: user.id, type: "password_reset" },
+            env.JWT_ACCESS_SECRET,
+            { expiresIn: "10m" } // User has 10 minutes to enter the new password
+        );
+
+        return { resetToken };
+    }
+
+    static async resetPassword(userId: string, newPassword: string) {
+        const hashedPassword = await bcrypt.hash(newPassword, 10);
+
+        // Update password AND invalidate all existing sessions (force logout everywhere)
+        await prisma.$transaction([
+            prisma.user.update({
+                where: { id: userId },
+                data: { password: hashedPassword },
+            }),
+            
+            prisma.userSession.deleteMany({
+                where: { userId },
+            }),
+        ]);
+
+        return { message: "Password reset successfully. You can now log in." };
     }
 }
