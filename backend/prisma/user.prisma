@@ -1,0 +1,38 @@
+model User {
+    id         String   @id @default(uuid())
+    email      String   @unique
+    password   String
+    name       String?
+    profilePic String?
+    isVerified Boolean  @default(false)
+    createdAt  DateTime @default(now())
+    updatedAt  DateTime @updatedAt
+
+    sessions           UserSession[]
+    verificationTokens VerificationToken[]
+
+    @@map("users")
+}
+
+model UserSession {
+    id          String   @id @default(uuid())
+    userId      String
+    refreshHash String   @unique
+    createdAt   DateTime @default(now())
+    expiresAt   DateTime
+
+    user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+    @@map("user_sessions")
+}
+
+model VerificationToken {
+    id        String   @id @default(uuid())
+    token     String   @unique
+    userId    String
+    expiresAt DateTime
+
+    user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+    @@map("verification_tokens")
+}
