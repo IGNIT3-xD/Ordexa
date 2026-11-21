@@ -59,3 +59,20 @@ export const updateVariantSchema = z.object({
         // Stock must be updated via the 'adjustStock' endpoint to ensure it's logged in StockMovement.
     }),
 });
+
+export const setPrimaryImageSchema = z.object({
+    body: z.object({
+        isPrimary: z.boolean(),
+    }),
+});
+
+export const getProductsQuerySchema = z.object({
+    query: z.object({
+        search: z.string().optional(),
+        status: z.enum(["ACTIVE", "ARCHIVED"]).optional(),
+        includeDeleted: z.preprocess(
+            (val) => val === "true" || val === true,
+            z.boolean().optional().default(false)
+        ),
+    }),
+});

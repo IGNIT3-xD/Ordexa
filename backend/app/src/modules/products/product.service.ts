@@ -2,6 +2,7 @@ import { prisma } from "../../lib/prisma.js";
 import { ApiError } from "../../utils/AppError.js";
 import { uploadToCloudinary } from "../../lib/cloudinary.js";
 import { ProductStatus } from "../../../generated/prisma/enums.js";
+import { v2 as cloudinary } from "cloudinary";
 
 export class ProductService {
     static async createProduct(
@@ -76,31 +77,43 @@ export class ProductService {
         });
     }
 
-    static async getProducts(businessId: string, search?: string, status?: ProductStatus) {
+    static async getProducts(
+        businessId: string,
+        search?: string,
+        status?: ProductStatus,
+        includeDeleted: boolean = false
+    ) {
         return prisma.product.findMany({
             where: {
                 businessId,
+                // If includeDeleted is true, we don't filter by isDeleted
+                ...(includeDeleted ? {} : { isDeleted: false }),
                 ...(status && { status }),
                 ...(search && {
                     name: { contains: search, mode: "insensitive" },
                 }),
-                isDeleted: false,
-                status: ProductStatus.ACTIVE
             },
             include: {
                 images: { where: { isPrimary: true } },
-                variants: { select: { stock: true } },
+                variants: {
+                    // If a product is not deleted, we still only want to show active variants
+                    where: includeDeleted ? {} : { isDeleted: false },
+                    select: { stock: true }
+                },
             },
             orderBy: { createdAt: "desc" },
         });
     }
 
-    static async getProductById(businessId: string, productId: string) {
+    static async getProductById(businessId: string, productId: string, includeDeleted = false) {
         const product = await prisma.product.findFirst({
-            where: { id: productId, businessId, isDeleted: false },
+            where: {
+                id: productId, businessId,
+                ...(includeDeleted ? {} : { isDeleted: false })
+            },
             include: {
                 variants: {
-                    where: { isDeleted: false }
+                    where: includeDeleted ? {} : { isDeleted: false }
                 },
                 images: true,
             },
@@ -171,28 +184,6 @@ export class ProductService {
         });
     }
 
-    static async addProductImage(businessId: string, productId: string, fileBuffer: Buffer) {
-        await this.getProductById(businessId, productId);
-
-        const url = await uploadToCloudinary(fileBuffer);
-
-        // Extract publicId from URL (Cloudinary URLs contain the public ID)
-        const publicId = url.split("/").slice(-2).join("/").split(".")[0] ?? '';
-
-        // Check if this is the first image to set as primary
-        const imageCount = await prisma.productImage.count({ where: { productId } });
-        const isPrimary = imageCount === 0;
-
-        return prisma.productImage.create({
-            data: {
-                productId,
-                url,
-                publicId,
-                isPrimary,
-            },
-        });
-    }
-
     static async deleteProduct(businessId: string, productId: string) {
         await this.getProductById(businessId, productId);
 
@@ -230,5 +221,65 @@ export class ProductService {
             where: { id: variantId },
             data,
         });
+    }
+
+    static async restoreProduct(businessId: string, productId: string) {
+        await this.getProductById(businessId, productId, true);
+
+        return prisma.product.update({
+            where: { id: productId },
+            data: { isDeleted: false, status: ProductStatus.ACTIVE },
+        });
+    }
+
+    static async restoreVariant(businessId: string, variantId: string) {
+        const variant = await prisma.productVariant.findFirst({
+            where: { id: variantId, businessId },
+        });
+
+        if (!variant)
+            throw new ApiError(404, "Variant not found");
+
+        return prisma.productVariant.update({
+            where: { id: variantId },
+            data: { isDeleted: false },
+        });
+    }
+
+    static async updateImage(businessId: string, productId: string, imageId: string, isPrimary: boolean) {
+        await this.getProductById(businessId, productId);
+
+        if (isPrimary) {
+            await prisma.productImage.updateMany({
+                where: { productId },
+                data: { isPrimary: false },
+            });
+        }
+
+        return prisma.productImage.update({
+            where: { id: imageId, productId },
+            data: { isPrimary },
+        });
+    }
+
+    static async deleteImage(businessId: string, productId: string, imageId: string) {
+        await this.getProductById(businessId, productId);
+
+        const image = await prisma.productImage.findFirst({
+            where: { id: imageId, productId },
+        });
+
+        if (!image)
+            throw new ApiError(404, "Image not found");
+
+        try {
+            await cloudinary.uploader.destroy(image.publicId);
+        } catch (error) {
+            console.error("Failed to delete from Cloudinary:", error);
+        }
+
+        await prisma.productImage.delete({ where: { id: imageId } });
+
+        return { message: "Image deleted successfully" };
     }
 }
