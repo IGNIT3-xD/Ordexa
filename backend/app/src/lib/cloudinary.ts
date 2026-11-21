@@ -16,6 +16,7 @@ export const uploadToCloudinary = (fileBuffer: Buffer): Promise<string> => {
                 resolve(result.secure_url);
             }
         );
+        
         uploadStream.end(fileBuffer);
     });
 };
