@@ -48,3 +48,14 @@ export const adjustStockSchema = z.object({
         reason: z.string().min(2, { error: "Reason is required for stock adjustment" }),
     }),
 });
+
+export const updateVariantSchema = z.object({
+    body: z.object({
+        sku: z.string().optional(),
+        size: z.string().optional(),
+        color: z.string().optional(),
+        price: z.coerce.number().positive({ error: "Price must be positive" }).optional(),
+        // Note: We don't allow updating 'stock' here. 
+        // Stock must be updated via the 'adjustStock' endpoint to ensure it's logged in StockMovement.
+    }),
+});
