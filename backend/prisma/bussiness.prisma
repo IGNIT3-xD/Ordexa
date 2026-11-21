@@ -11,6 +11,7 @@ model Business {
 
     memberships Membership[]
     invitations Invitation[]
+    products    Product[]
 
     @@map("businesses")
 }

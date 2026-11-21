@@ -20,3 +20,8 @@ enum InvitationStatus {
     ACCEPTED
     EXPIRED
 }
+
+enum ProductStatus {
+    ACTIVE
+    ARCHIVED
+}
