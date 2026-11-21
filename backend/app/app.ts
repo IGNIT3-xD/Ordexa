@@ -4,12 +4,12 @@ import express, {
     type NextFunction,
 } from "express";
 import cors from "cors";
-import { randomUUID } from "node:crypto";
 import { prisma } from "./src/lib/prisma";
 import { errorHandler } from "./src/middleware/error.middleware";
 import authRoutes from "./src/modules/auth/auth.routes";
 import cookieParser from "cookie-parser";
 import profileRoutes from "./src/modules/my-profile/profile.routes";
+import businessRoutes from "./src/modules/businesses/business.routes";
 
 export function createApp() {
     const app = express();
@@ -30,6 +30,7 @@ export function createApp() {
 
     app.use("/api/auth", authRoutes);
     app.use("/api/my-profile", profileRoutes);
+    app.use("/api/businesses", businessRoutes);
 
     // Health check — pings the DB. 200 = all good, 503 = DB unreachable.
     app.get("/health", async (_req, res) => {
