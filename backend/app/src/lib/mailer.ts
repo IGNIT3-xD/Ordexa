@@ -31,7 +31,7 @@ export const sendVerificationEmail = async (to: string, code: string, name?: str
 };
 
 export const sendWelcomeEmail = async (to: string, name?: string) => {
-    const loginUrl = `http://localhost:3000/login`;
+    const loginUrl = `${env.FRONTEND_URL}/login`;
 
     if (!env.SMTP_HOST) {
         console.log(`\n📧 [DEV] Welcome email would be sent to ${to}\n`);
@@ -63,5 +63,24 @@ export const sendPasswordResetEmail = async (to: string, code: string, name?: st
         to,
         subject: "Reset your Ordexa Password",
         html: html,
+    });
+};
+
+export const sendInviteEmail = async (to: string, businessName: string, role: string, rawToken: string) => {
+    const inviteUrl = `${env.FRONTEND_URL}/accept-invite?token=${rawToken}`;
+
+    if (!env.SMTP_HOST) {
+        console.log(`\n📧 [DEV] Invite link for ${to}: ${inviteUrl}\n`);
+        return;
+    }
+
+    const templatePath = path.join(__dirname, "../templates/invite.ejs");
+    const html = await ejs.renderFile(templatePath, { businessName, role, inviteUrl });
+
+    await transporter.sendMail({
+        from: `${env.SMTP_EMAIL_SENDER}`,
+        to,
+        subject: `Invitation to join ${businessName}`,
+        html,
     });
 };

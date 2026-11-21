@@ -1,6 +1,8 @@
-import { currency, Role } from "../../../generated/prisma/enums.js";
+import { currency, InvitationStatus, Role } from "../../../generated/prisma/enums.js";
+import { sendInviteEmail } from "../../lib/mailer.js";
 import { prisma } from "../../lib/prisma.js";
 import { ApiError } from "../../utils/AppError.js";
+import crypto from "node:crypto";
 
 export class BusinessService {
     static async createBusiness(userId: string, data: { name: string; slug: string }) {
@@ -83,4 +85,72 @@ export class BusinessService {
             data: { isDeleted: true, status: "SUSPENDED" },
         });
     }
+
+    static async inviteUser(businessId: string, email: string, role: "MANAGER" | "STAFF") {
+        const business = await prisma.business.findUnique({ where: { id: businessId } });
+
+        if (!business)
+            throw new ApiError(404, "Business not found");
+
+        const existingUser = await prisma.user.findUnique({
+            where: { email },
+            include: { memberships: true }
+        });
+
+        if (existingUser) {
+            const isMember = existingUser.memberships.some(m => m.businessId === businessId);
+
+            if (isMember)
+                throw new ApiError(409, "User is already a member of this business");
+        }
+
+        // Generate token
+        const rawToken = crypto.randomBytes(32).toString("hex");
+        const tokenHash = crypto.createHash("sha256").update(rawToken).digest("hex");
+
+        // Save invite
+        await prisma.invitation.create({
+            data: {
+                email, role, businessId, token: tokenHash,
+                expiresAt: new Date(Date.now() + 48 * 60 * 60 * 1000), // 48 hours
+            },
+        });
+
+        await sendInviteEmail(email, business.name, role, rawToken);
+
+        return { message: "Invitation sent successfully" };
+    }
+
+    static async acceptInvite(userId: string, rawToken: string) {
+        const tokenHash = crypto.createHash("sha256").update(rawToken).digest("hex");
+
+        const invite = await prisma.invitation.findUnique({
+            where: { token: tokenHash }
+        });
+
+        if (!invite || invite.status !== InvitationStatus.PENDING || invite.expiresAt < new Date()) {
+            throw new ApiError(400, "Invalid or expired invitation");
+        }
+
+        // Verify the logged-in user's email matches the invite
+        const user = await prisma.user.findUnique({ where: { id: userId } });
+
+        if (user?.email !== invite.email) {
+            throw new ApiError(403, "This invitation was sent to a different email address");
+        }
+
+        // Add them to the business and mark invite as accepted
+        await prisma.$transaction([
+            prisma.membership.create({
+                data: { userId, businessId: invite.businessId, role: invite.role },
+            }),
+
+            prisma.invitation.update({
+                where: { id: invite.id }, data: { status: InvitationStatus.ACCEPTED },
+            }),
+        ]);
+
+        return { message: "Invitation accepted successfully" };
+    }
+
 }
