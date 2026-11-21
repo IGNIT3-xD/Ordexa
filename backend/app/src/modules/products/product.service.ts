@@ -84,6 +84,7 @@ export class ProductService {
                 ...(search && {
                     name: { contains: search, mode: "insensitive" },
                 }),
+                isDeleted: false,
                 status: ProductStatus.ACTIVE
             },
             include: {
@@ -96,9 +97,11 @@ export class ProductService {
 
     static async getProductById(businessId: string, productId: string) {
         const product = await prisma.product.findFirst({
-            where: { id: productId, businessId },
+            where: { id: productId, businessId, isDeleted: false },
             include: {
-                variants: true,
+                variants: {
+                    where: { isDeleted: false }
+                },
                 images: true,
             },
         });
@@ -187,6 +190,45 @@ export class ProductService {
                 publicId,
                 isPrimary,
             },
+        });
+    }
+
+    static async deleteProduct(businessId: string, productId: string) {
+        await this.getProductById(businessId, productId);
+
+        return prisma.product.update({
+            where: { id: productId },
+            data: { isDeleted: true, status: ProductStatus.ARCHIVED },
+        });
+    }
+
+    static async deleteVariant(businessId: string, variantId: string) {
+        const variant = await prisma.productVariant.findFirst({
+            where: { id: variantId, businessId },
+        });
+
+        if (!variant)
+            throw new ApiError(404, "Variant not found");
+
+        await prisma.productVariant.update({
+            where: { id: variantId },
+            data: { isDeleted: true }
+        });
+
+        return { message: "Variant deleted successfully" };
+    }
+
+    static async updateVariant(businessId: string, variantId: string, data: any) {
+        const variant = await prisma.productVariant.findFirst({
+            where: { id: variantId, businessId },
+        });
+
+        if (!variant)
+            throw new ApiError(404, "Variant not found");
+
+        return prisma.productVariant.update({
+            where: { id: variantId },
+            data,
         });
     }
 }

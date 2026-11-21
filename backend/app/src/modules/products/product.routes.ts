@@ -10,12 +10,16 @@ import {
     addVariant,
     adjustStock,
     uploadImage,
+    deleteProduct,
+    updateVariant,
+    deleteVariant,
 } from "./product.controller.js";
 import {
     createProductSchema,
     updateProductSchema,
     addVariantSchema,
     adjustStockSchema,
+    updateVariantSchema,
 } from "./product.schema.js";
 import { Role } from "../../../generated/prisma/enums.js";
 
@@ -57,6 +61,11 @@ router.post(
 router.patch("/:productId", requireRole([Role.OWNER, Role.MANAGER]), validate(updateProductSchema), updateProduct);
 router.post("/:productId/variants", requireRole([Role.OWNER, Role.MANAGER]), validate(addVariantSchema), addVariant);
 router.post("/:productId/images", requireRole([Role.OWNER, Role.MANAGER]), upload.single("image"), uploadImage);
+router.delete("/:productId", requireRole([Role.OWNER, Role.MANAGER]), deleteProduct);
+
+// Variant specific routes
+router.patch("/variants/:variantId", requireRole([Role.OWNER, Role.MANAGER]), validate(updateVariantSchema), updateVariant);
+router.delete("/variants/:variantId", requireRole([Role.OWNER, Role.MANAGER]), deleteVariant);
 
 // INVENTORY adjustments (Staff can also adjust stock, e.g., when new shipments arrive)
 router.patch("/variants/:variantId/stock", requireRole([Role.OWNER, Role.MANAGER, Role.STAFF]), validate(adjustStockSchema), adjustStock);

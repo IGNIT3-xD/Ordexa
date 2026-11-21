@@ -91,3 +91,34 @@ export const uploadImage = asyncHandler(async (req: Request, res: Response) => {
     );
     res.status(201).json(image);
 });
+
+export const deleteProduct = asyncHandler(async (req: Request, res: Response) => {
+    if (!req.tenant)
+        throw new ApiError(500, "Tenant missing");
+
+    const result = await ProductService.deleteProduct(req.tenant.businessId, req.params.productId as string);
+
+    res.json(result);
+});
+
+export const deleteVariant = asyncHandler(async (req: Request, res: Response) => {
+    if (!req.tenant)
+        throw new ApiError(500, "Tenant missing");
+
+    const result = await ProductService.deleteVariant(req.tenant.businessId, req.params.variantId as string);
+
+    res.json(result);
+});
+
+export const updateVariant = asyncHandler(async (req: Request, res: Response) => {
+    if (!req.tenant)
+        throw new ApiError(500, "Tenant missing");
+
+    const result = await ProductService.updateVariant(
+        req.tenant.businessId,
+        req.params.variantId as string,
+        req.body
+    );
+
+    res.json(result);
+});
