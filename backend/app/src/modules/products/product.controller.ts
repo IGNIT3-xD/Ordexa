@@ -23,12 +23,13 @@ export const listProducts = asyncHandler(async (req: Request, res: Response) => 
     if (!req.tenant)
         throw new ApiError(500, "Tenant missing");
 
-    const { search, status } = req.query;
+    const { search, status, includeDeleted } = (req as any).validatedQuery;
 
     const products = await ProductService.getProducts(
         req.tenant.businessId,
         search as string | undefined,
-        status as ProductStatus
+        status as ProductStatus,
+        includeDeleted as boolean
     );
 
     res.json(products);
@@ -38,7 +39,13 @@ export const getProduct = asyncHandler(async (req: Request, res: Response) => {
     if (!req.tenant)
         throw new ApiError(500, "Tenant missing");
 
-    const product = await ProductService.getProductById(req.tenant.businessId, req.params.productId as string);
+    const { includeDeleted } = req.query
+
+    const product = await ProductService.getProductById(
+        req.tenant.businessId,
+        req.params.productId as string,
+        includeDeleted as unknown as boolean
+    );
 
     res.json(product);
 });
@@ -77,21 +84,6 @@ export const adjustStock = asyncHandler(async (req: Request, res: Response) => {
     res.json(result);
 });
 
-export const uploadImage = asyncHandler(async (req: Request, res: Response) => {
-    if (!req.tenant)
-        throw new ApiError(500, "Tenant missing");
-
-    if (!req.file)
-        throw new ApiError(400, "No image file provided");
-
-    const image = await ProductService.addProductImage(
-        req.tenant.businessId,
-        req.params.productId as string,
-        req.file.buffer
-    );
-    res.status(201).json(image);
-});
-
 export const deleteProduct = asyncHandler(async (req: Request, res: Response) => {
     if (!req.tenant)
         throw new ApiError(500, "Tenant missing");
@@ -118,6 +110,53 @@ export const updateVariant = asyncHandler(async (req: Request, res: Response) =>
         req.tenant.businessId,
         req.params.variantId as string,
         req.body
+    );
+
+    res.json(result);
+});
+
+export const restoreProduct = asyncHandler(async (req: Request, res: Response) => {
+    if (!req.tenant)
+        throw new ApiError(500, "Tenant missing");
+
+    const result = await ProductService.restoreProduct(req.tenant.businessId, req.params.productId as string);
+
+    res.json(result);
+});
+
+export const restoreVariant = asyncHandler(async (req: Request, res: Response) => {
+    if (!req.tenant)
+        throw new ApiError(500, "Tenant missing");
+
+    const result = await ProductService.restoreVariant(req.tenant.businessId, req.params.variantId as string);
+
+    res.json(result);
+});
+
+export const updateImage = asyncHandler(async (req: Request, res: Response) => {
+    if (!req.tenant)
+        throw new ApiError(500, "Tenant missing");
+
+    const { isPrimary } = req.body;
+
+    const result = await ProductService.updateImage(
+        req.tenant.businessId,
+        req.params.productId as string,
+        req.params.imageId as string,
+        isPrimary
+    );
+
+    res.json(result);
+});
+
+export const deleteImage = asyncHandler(async (req: Request, res: Response) => {
+    if (!req.tenant)
+        throw new ApiError(500, "Tenant missing");
+
+    const result = await ProductService.deleteImage(
+        req.tenant.businessId,
+        req.params.productId as string,
+        req.params.imageId as string
     );
 
     res.json(result);
