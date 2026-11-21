@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { currency } from "../../../generated/prisma/enums";
+import { currency, Role } from "../../../generated/prisma/enums";
 
 export const createBusinessSchema = z.object({
     body: z.object({
@@ -16,5 +16,12 @@ export const updateBusinessSchema = z.object({
         name: z.string().min(2, { error: "Business name must be at least 2 characters" }).optional(),
         currency: z.enum([currency.BDT, currency.EUR, currency.USD]).optional(),
         timezone: z.string().optional(),
+    }),
+});
+
+export const inviteUserSchema = z.object({
+    body: z.object({
+        email: z.email({ error: "Valid email required" }),
+        role: z.enum([Role.MANAGER, Role.STAFF], { error: "Role must be MANAGER or STAFF" }),
     }),
 });

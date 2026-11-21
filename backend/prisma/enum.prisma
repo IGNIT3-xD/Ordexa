@@ -14,3 +14,9 @@ enum currency {
     USD
     EUR
 }
+
+enum InvitationStatus {
+    PENDING
+    ACCEPTED
+    EXPIRED
+}

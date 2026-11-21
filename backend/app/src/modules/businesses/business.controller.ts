@@ -50,3 +50,23 @@ export const deleteBusiness = asyncHandler(async (req: Request, res: Response) =
 
     res.json({ message: "Business deleted successfully" });
 });
+
+export const inviteUser = asyncHandler(async (req: Request, res: Response) => {
+    if (!req.tenant)
+        throw new ApiError(500, "Tenant context missing");
+
+    const { email, role } = req.body;
+
+    const result = await BusinessService.inviteUser(req.tenant.businessId, email, role);
+
+    res.status(201).json(result);
+});
+
+export const acceptInvite = asyncHandler(async (req: Request, res: Response) => {
+    const userId = (req as any).userId;
+    const { token } = req.body;
+
+    const result = await BusinessService.acceptInvite(userId, token);
+    
+    res.json(result);
+});
