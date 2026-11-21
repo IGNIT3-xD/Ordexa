@@ -153,4 +153,42 @@ export class BusinessService {
         return { message: "Invitation accepted successfully" };
     }
 
+    static async updateMemberRole(businessId: string, memberId: string, newRole: "MANAGER" | "STAFF") {
+        const membership = await prisma.membership.findUnique({
+            where: { id: memberId },
+        });
+
+        if (!membership || membership.businessId !== businessId) {
+            throw new ApiError(404, "Member not found in this business");
+        }
+
+        if (membership.role === Role.OWNER) {
+            throw new ApiError(403, "Cannot change the role of the business owner");
+        }
+
+        return prisma.membership.update({
+            where: { id: memberId },
+            data: { role: newRole },
+        });
+    }
+
+    static async removeMember(businessId: string, memberId: string) {
+        const membership = await prisma.membership.findUnique({
+            where: { id: memberId },
+        });
+
+        if (!membership || membership.businessId !== businessId) {
+            throw new ApiError(404, "Member not found in this business");
+        }
+
+        if (membership.role === Role.OWNER) {
+            throw new ApiError(403, "Cannot remove the business owner");
+        }
+
+        await prisma.membership.delete({
+            where: { id: memberId },
+        });
+
+        return { message: "Member removed successfully" };
+    }
 }

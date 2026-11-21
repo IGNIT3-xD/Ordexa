@@ -10,8 +10,10 @@ import {
     deleteBusiness,
     inviteUser,
     acceptInvite,
+    updateMemberRole,
+    removeMember,
 } from "./business.controller.js";
-import { createBusinessSchema, inviteUserSchema, updateBusinessSchema } from "./business.schema.js";
+import { createBusinessSchema, inviteUserSchema, updateBusinessSchema, updateMemberRoleSchema } from "./business.schema.js";
 import { Role } from "../../../generated/prisma/enums.js";
 
 const validate = (schema: any) => (req: any, res: any, next: any) => {
@@ -43,5 +45,20 @@ router.post(
 );
 
 router.post("/invitations/accept", protect, acceptInvite);
+
+router.patch(
+    "/current/members/:memberId/role",
+    resolveBusiness,
+    requireRole(["OWNER"]),
+    validate(updateMemberRoleSchema),
+    updateMemberRole
+);
+
+router.delete(
+    "/current/members/:memberId",
+    resolveBusiness,
+    requireRole([Role.OWNER]),
+    removeMember
+);
 
 export default router

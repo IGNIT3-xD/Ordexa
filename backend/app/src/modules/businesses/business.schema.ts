@@ -25,3 +25,11 @@ export const inviteUserSchema = z.object({
         role: z.enum([Role.MANAGER, Role.STAFF], { error: "Role must be MANAGER or STAFF" }),
     }),
 });
+
+export const updateMemberRoleSchema = z.object({
+    body: z.object({
+        role: z.enum([Role.MANAGER, Role.STAFF], {
+            error: "Role must be either MANAGER or STAFF"
+        }),
+    }),
+});

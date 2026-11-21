@@ -67,6 +67,30 @@ export const acceptInvite = asyncHandler(async (req: Request, res: Response) => 
     const { token } = req.body;
 
     const result = await BusinessService.acceptInvite(userId, token);
-    
+
+    res.json(result);
+});
+
+
+export const updateMemberRole = asyncHandler(async (req: Request, res: Response) => {
+    if (!req.tenant)
+        throw new ApiError(500, "Tenant context missing");
+
+    const { memberId } = req.params;
+    const { role } = req.body;
+
+    const updated = await BusinessService.updateMemberRole(req.tenant.businessId, memberId as string, role);
+
+    res.json(updated);
+});
+
+export const removeMember = asyncHandler(async (req: Request, res: Response) => {
+    if (!req.tenant)
+        throw new ApiError(500, "Tenant context missing");
+
+    const { memberId } = req.params;
+
+    const result = await BusinessService.removeMember(req.tenant.businessId, memberId as string);
+
     res.json(result);
 });
