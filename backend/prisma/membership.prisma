@@ -1,0 +1,14 @@
+model Membership {
+    id         String   @id @default(uuid())
+    userId     String
+    businessId String
+    role       Role     @default(STAFF)
+    createdAt  DateTime @default(now())
+
+    user     User     @relation(fields: [userId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+    business Business @relation(fields: [businessId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+
+    // A user can only have ONE membership per business
+    @@unique([userId, businessId])
+    @@map("memberships")
+}

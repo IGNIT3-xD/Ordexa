@@ -1,0 +1,16 @@
+enum Role {
+    OWNER
+    MANAGER
+    STAFF
+}
+
+enum Status {
+    ACTIVE
+    SUSPENDED
+}
+
+enum currency {
+    BDT
+    USD
+    EUR
+}
