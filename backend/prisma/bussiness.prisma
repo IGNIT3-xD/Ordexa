@@ -14,6 +14,7 @@ model Business {
     products         Product[]
     orderForms       OrderForm[]
     orderSubmissions OrderSubmission[]
+    orders           Order[]
 
     @@map("businesses")
 }
