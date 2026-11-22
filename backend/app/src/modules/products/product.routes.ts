@@ -16,6 +16,7 @@ import {
     deleteImage,
     restoreVariant,
     updateImage,
+    uploadImages,
 } from "./product.controller.js";
 import {
     createProductSchema,
@@ -80,5 +81,11 @@ router.patch("/variants/:variantId/restore", requireRole([Role.OWNER, Role.MANAG
 // Image routes
 router.patch("/:productId/images/:imageId", requireRole([Role.OWNER, Role.MANAGER]), validate(setPrimaryImageSchema), updateImage);
 router.delete("/:productId/images/:imageId", requireRole([Role.OWNER, Role.MANAGER]), deleteImage);
+router.post(
+    "/:productId/images",
+    requireRole([Role.OWNER, Role.MANAGER]),
+    upload.array("images", 5),
+    uploadImages
+);
 
 export default router;

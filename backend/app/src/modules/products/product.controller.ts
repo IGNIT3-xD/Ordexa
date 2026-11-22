@@ -161,3 +161,22 @@ export const deleteImage = asyncHandler(async (req: Request, res: Response) => {
 
     res.json(result);
 });
+
+export const uploadImages = asyncHandler(async (req: Request, res: Response) => {
+    if (!req.tenant)
+        throw new ApiError(500, "Tenant missing");
+
+    const files = req.files as Express.Multer.File[] | undefined;
+    
+    if (!files || files.length === 0) {
+        throw new ApiError(400, "Please upload at least one image");
+    }
+
+    const images = await ProductService.uploadImages(
+        req.tenant.businessId,
+        req.params.productId as string,
+        files
+    );
+
+    res.status(201).json(images);
+});

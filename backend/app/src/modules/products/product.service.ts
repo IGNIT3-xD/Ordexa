@@ -280,6 +280,58 @@ export class ProductService {
 
         await prisma.productImage.delete({ where: { id: imageId } });
 
+        // If the deleted image was primary, assign a new primary
+        if (image.isPrimary) {
+            const nextImage = await prisma.productImage.findFirst({
+                where: { productId },
+                orderBy: { createdAt: "asc" }, // Pick the next oldest image
+            });
+
+            if (nextImage) {
+                await prisma.productImage.update({
+                    where: { id: nextImage.id },
+                    data: { isPrimary: true },
+                });
+            }
+        }
+
         return { message: "Image deleted successfully" };
+    }
+
+    static async uploadImages(
+        businessId: string,
+        productId: string,
+        files: Express.Multer.File[]
+    ) {
+        await this.getProductById(businessId, productId);
+
+        if (!files || files.length === 0) {
+            throw new ApiError(400, "No image files provided");
+        }
+
+        const uploadPromises = files.map((file) => uploadToCloudinary(file.buffer));
+        const urls = await Promise.all(uploadPromises);
+
+        // Check if this product has any images yet
+        const existingImageCount = await prisma.productImage.count({
+            where: { productId }
+        });
+
+        const createdImages = await prisma.$transaction(
+            urls.map((url, index) => {
+                const publicId = url.split("/").slice(-2).join("/").split(".")[0] ?? "";
+                return prisma.productImage.create({
+                    data: {
+                        productId,
+                        url,
+                        publicId,
+                        // If there are NO existing images, make the very first uploaded image primary
+                        isPrimary: existingImageCount === 0 && index === 0,
+                    },
+                });
+            })
+        );
+
+        return createdImages;
     }
 }
