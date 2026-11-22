@@ -22,3 +22,9 @@ export const submitOrderSchema = z.object({
         ).min(1, { error: "At least one item is required" }),
     }),
 });
+
+export const updateFormStatusSchema = z.object({
+    body: z.object({
+        isActive: z.boolean(),
+    }),
+});

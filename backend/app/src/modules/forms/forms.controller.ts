@@ -31,6 +31,17 @@ export const generateToken = asyncHandler(async (req: Request, res: Response) =>
     res.json(result);
 });
 
+export const updateFormStatus = asyncHandler(async (req: Request, res: Response) => {
+    if (!req.tenant)
+        throw new ApiError(500, "Tenant missing");
+
+    const { isActive } = req.body;
+
+    const form = await FormService.updateFormStatus(req.tenant.businessId, req.params.formId as string, isActive);
+
+    res.json(form);
+});
+
 // PUBLIC (No Auth)
 export const getPublicForm = asyncHandler(async (req: Request, res: Response) => {
     const result = await FormService.getPublicForm(req.params.token as string);

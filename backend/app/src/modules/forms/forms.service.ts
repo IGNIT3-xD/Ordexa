@@ -5,15 +5,44 @@ import { ProductStatus } from "../../../generated/prisma/enums.js";
 
 export class FormService {
     static async createForm(businessId: string, data: { name: string; description?: string }) {
-        return prisma.orderForm.create({
-            data: { businessId, ...data },
+        const rawToken = crypto.randomBytes(32).toString("hex");
+
+        const form = await prisma.orderForm.create({
+            data: {
+                businessId,
+                name: data.name,
+                description: data.description,
+                tokens: {
+                    create: {
+                        token: rawToken,
+                        expiresAt: null,
+                    },
+                },
+            },
+            include: {
+                tokens: true,
+            },
         });
+
+        return form;
     }
 
     static async listForms(businessId: string) {
         return prisma.orderForm.findMany({
             where: { businessId },
-            include: { _count: { select: { submissions: true, tokens: true } } },
+            include: {
+                _count: { select: { submissions: true, tokens: true } },
+                tokens: {
+                    select: {
+                        id: true,
+                        token: true, // <-- Return raw token so frontend can build the link
+                        createdAt: true,
+                        expiresAt: true,
+                        revokedAt: true,
+                    },
+                    orderBy: { createdAt: "desc" },
+                },
+            },
             orderBy: { createdAt: "desc" },
         });
     }
@@ -26,31 +55,23 @@ export class FormService {
         if (!form)
             throw new ApiError(404, "Form not found");
 
-        // 1. Generate a raw 32-byte token
         const rawToken = crypto.randomBytes(32).toString("hex");
 
-        // 2. Hash it (we only store the hash in the DB)
-        const tokenHash = crypto.createHash("sha256").update(rawToken).digest("hex");
-
-        // 3. Save to DB (expires in 7 days by default)
-        await prisma.formToken.create({
+        const tokenRecord = await prisma.formToken.create({
             data: {
                 formId,
-                tokenHash,
-                expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
+                token: rawToken,
+                expiresAt: null,
             },
         });
 
-        // 4. Return the raw token ONCE. The frontend will build the URL.
-        return { rawToken, expiresInDays: 7 };
+        return { rawToken, tokenId: tokenRecord.id };
     }
 
     // PUBLIC: Get form data by token
     static async getPublicForm(rawToken: string) {
-        const tokenHash = crypto.createHash("sha256").update(rawToken).digest("hex");
-
         const token = await prisma.formToken.findUnique({
-            where: { tokenHash },
+            where: { token: rawToken },
             include: {
                 form: {
                     include: {
@@ -60,22 +81,13 @@ export class FormService {
             },
         });
 
-        // Security checks
-        if (!token)
-            throw new ApiError(404, "Invalid link");
+        if (!token) throw new ApiError(404, "Invalid link");
+        if (token.revokedAt) throw new ApiError(400, "This link has been revoked");
+        if (token.expiresAt && token.expiresAt < new Date()) throw new ApiError(400, "This link has expired");
+        if (!token.form.isActive) throw new ApiError(400, "This store is currently closed");
 
-        if (token.consumedAt)
-            throw new ApiError(400, "This link has already been used");
-
-        if (token.revokedAt)
-            throw new ApiError(400, "This link has been revoked");
-
-        if (token.expiresAt < new Date())
-            throw new ApiError(400, "This link has expired");
-
-        // Fetch active products for this business
         const products = await prisma.product.findMany({
-            where: { businessId: token.form.businessId, status: ProductStatus.ACTIVE, isDeleted: false },
+            where: { businessId: token.form.businessId, status: "ACTIVE", isDeleted: false },
             select: {
                 id: true,
                 name: true,
@@ -98,22 +110,20 @@ export class FormService {
 
     // PUBLIC: Submit the order
     static async submitOrder(rawToken: string, data: any) {
-        const tokenHash = crypto.createHash("sha256").update(rawToken).digest("hex");
-
-        // 1. Validate token again (inside transaction)
         return prisma.$transaction(async (tx) => {
             const token = await tx.formToken.findUnique({
-                where: { tokenHash },
+                where: { token: rawToken }, // Query by raw token
                 include: { form: true },
             });
 
-            if (!token || token.consumedAt || token.revokedAt || token.expiresAt < new Date()) {
+            if (!token || token.revokedAt || (token.expiresAt && token.expiresAt < new Date())) {
                 throw new ApiError(400, "Invalid or expired link");
             }
+            if (!token.form.isActive) {
+                throw new ApiError(400, "This store is currently closed");
+            }
 
-            // 2. Verify items and calculate total on the SERVER
             const variantIds = data.items.map((i: any) => i.variantId);
-
             const variants = await tx.productVariant.findMany({
                 where: { id: { in: variantIds }, businessId: token.form.businessId, isDeleted: false },
             });
@@ -122,7 +132,6 @@ export class FormService {
                 throw new ApiError(400, "One or more items are no longer available");
             }
 
-            // 3. Create the Submission
             const submission = await tx.orderSubmission.create({
                 data: {
                     businessId: token.form.businessId,
@@ -135,13 +144,19 @@ export class FormService {
                 },
             });
 
-            // 4. Consume the token (Atomically)
-            await tx.formToken.update({
-                where: { id: token.id },
-                data: { consumedAt: new Date() },
-            });
-
             return { message: "Order submitted successfully", submissionId: submission.id };
+        });
+    }
+
+    static async updateFormStatus(businessId: string, formId: string, isActive: boolean) {
+        const form = await prisma.orderForm.findFirst({ where: { id: formId, businessId } });
+
+        if (!form)
+            throw new ApiError(404, "Form not found");
+
+        return prisma.orderForm.update({
+            where: { id: formId },
+            data: { isActive },
         });
     }
 }

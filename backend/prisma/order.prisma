@@ -15,16 +15,15 @@ model OrderForm {
 }
 
 model FormToken {
-    id         String    @id @default(uuid())
-    formId     String
-    tokenHash  String    @unique
-    expiresAt  DateTime
-    consumedAt DateTime?
-    revokedAt  DateTime?
-    createdAt  DateTime  @default(now())
+    id        String    @id @default(uuid())
+    formId    String
+    token String    @unique
+    expiresAt DateTime?
+    revokedAt DateTime?
+    createdAt DateTime  @default(now())
 
-    form       OrderForm        @relation(fields: [formId], references: [id], onDelete: Cascade)
-    submission OrderSubmission?
+    form        OrderForm         @relation(fields: [formId], references: [id], onDelete: Cascade)
+    submissions OrderSubmission[]
 
     @@map("form_tokens")
 }
@@ -33,7 +32,7 @@ model OrderSubmission {
     id              String                @id @default(uuid())
     businessId      String
     formId          String
-    formTokenId     String                @unique
+    formTokenId     String
     customerName    String
     customerPhone   String
     deliveryAddress String
