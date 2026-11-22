@@ -31,3 +31,10 @@ enum OrderSubmissionStatus {
     CONVERTED
     REJECTED
 }
+
+enum OrderStatus {
+    PENDING_CONFIRMATION
+    CONFIRM
+    CANCELLED
+    REJECTED
+}

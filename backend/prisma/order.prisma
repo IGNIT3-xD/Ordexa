@@ -17,7 +17,7 @@ model OrderForm {
 model FormToken {
     id        String    @id @default(uuid())
     formId    String
-    token String    @unique
+    token     String    @unique
     expiresAt DateTime?
     revokedAt DateTime?
     createdAt DateTime  @default(now())
@@ -36,14 +36,52 @@ model OrderSubmission {
     customerName    String
     customerPhone   String
     deliveryAddress String
-    items           Json // Stores [{ variantId, quantity }] snapshot
+    items           Json
     status          OrderSubmissionStatus @default(PENDING)
+    rejectionReason String?
     createdAt       DateTime              @default(now())
 
     business  Business  @relation(fields: [businessId], references: [id], onDelete: Cascade)
     form      OrderForm @relation(fields: [formId], references: [id], onDelete: Cascade)
     formToken FormToken @relation(fields: [formTokenId], references: [id], onDelete: Cascade)
+    order     Order?
 
     @@index([businessId, status])
     @@map("order_submissions")
+}
+
+model Order {
+    id              String      @id @default(uuid())
+    businessId      String
+    submissionId    String      @unique
+    orderNumber     String
+    customerName    String
+    customerPhone   String
+    deliveryAddress String
+    totalAmount     Decimal     @db.Decimal(10, 2)
+    status          OrderStatus @default(PENDING_CONFIRMATION)
+    createdAt       DateTime    @default(now())
+    updatedAt       DateTime    @updatedAt
+
+    business   Business        @relation(fields: [businessId], references: [id], onDelete: Cascade)
+    submission OrderSubmission @relation(fields: [submissionId], references: [id])
+    items      OrderItem[]
+
+    @@index([businessId, status])
+    @@map("orders")
+}
+
+model OrderItem {
+    id          String  @id @default(uuid())
+    orderId     String
+    variantId   String
+    productName String
+    variantName String
+    unitPrice   Decimal @db.Decimal(10, 2)
+    quantity    Int
+    lineTotal   Decimal @db.Decimal(10, 2)
+
+    order Order @relation(fields: [orderId], references: [id], onDelete: Cascade)
+
+    @@map("order_items")
 }

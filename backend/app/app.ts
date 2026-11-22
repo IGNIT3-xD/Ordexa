@@ -12,6 +12,8 @@ import profileRoutes from "./src/modules/my-profile/profile.routes";
 import businessRoutes from "./src/modules/businesses/business.routes";
 import productRoutes from "./src/modules/products/product.routes";
 import { dashboardFormRouter, publicFormRouter } from "./src/modules/forms/forms.routes";
+import submissionRoutes from "./src/modules/order-submissions/submission.routes";
+import orderRoutes from "./src/modules/order/order.routes";
 
 export function createApp() {
     const app = express();
@@ -36,6 +38,8 @@ export function createApp() {
     app.use("/api/products", productRoutes);
     app.use("/api/order-forms", dashboardFormRouter);
     app.use("/api/public/orders", publicFormRouter);
+    app.use("/api/submissions", submissionRoutes);
+    app.use("/api/orders", orderRoutes);
 
     // Health check — pings the DB. 200 = all good, 503 = DB unreachable.
     app.get("/health", async (_req, res) => {
