@@ -11,6 +11,7 @@ import cookieParser from "cookie-parser";
 import profileRoutes from "./src/modules/my-profile/profile.routes";
 import businessRoutes from "./src/modules/businesses/business.routes";
 import productRoutes from "./src/modules/products/product.routes";
+import { dashboardFormRouter, publicFormRouter } from "./src/modules/forms/forms.routes";
 
 export function createApp() {
     const app = express();
@@ -33,6 +34,8 @@ export function createApp() {
     app.use("/api/my-profile", profileRoutes);
     app.use("/api/businesses", businessRoutes);
     app.use("/api/products", productRoutes);
+    app.use("/api/order-forms", dashboardFormRouter);
+    app.use("/api/public/orders", publicFormRouter);
 
     // Health check — pings the DB. 200 = all good, 503 = DB unreachable.
     app.get("/health", async (_req, res) => {
