@@ -1,0 +1,50 @@
+model OrderForm {
+    id          String   @id @default(uuid())
+    businessId  String
+    name        String
+    description String?
+    isActive    Boolean  @default(true)
+    createdAt   DateTime @default(now())
+    updatedAt   DateTime @updatedAt
+
+    business    Business          @relation(fields: [businessId], references: [id], onDelete: Cascade)
+    tokens      FormToken[]
+    submissions OrderSubmission[]
+
+    @@map("order_forms")
+}
+
+model FormToken {
+    id         String    @id @default(uuid())
+    formId     String
+    tokenHash  String    @unique
+    expiresAt  DateTime
+    consumedAt DateTime?
+    revokedAt  DateTime?
+    createdAt  DateTime  @default(now())
+
+    form       OrderForm        @relation(fields: [formId], references: [id], onDelete: Cascade)
+    submission OrderSubmission?
+
+    @@map("form_tokens")
+}
+
+model OrderSubmission {
+    id              String                @id @default(uuid())
+    businessId      String
+    formId          String
+    formTokenId     String                @unique
+    customerName    String
+    customerPhone   String
+    deliveryAddress String
+    items           Json // Stores [{ variantId, quantity }] snapshot
+    status          OrderSubmissionStatus @default(PENDING)
+    createdAt       DateTime              @default(now())
+
+    business  Business  @relation(fields: [businessId], references: [id], onDelete: Cascade)
+    form      OrderForm @relation(fields: [formId], references: [id], onDelete: Cascade)
+    formToken FormToken @relation(fields: [formTokenId], references: [id], onDelete: Cascade)
+
+    @@index([businessId, status])
+    @@map("order_submissions")
+}

@@ -25,3 +25,9 @@ enum ProductStatus {
     ACTIVE
     ARCHIVED
 }
+
+enum OrderSubmissionStatus {
+    PENDING
+    CONVERTED
+    REJECTED
+}
