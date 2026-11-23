@@ -17,6 +17,7 @@ import orderRoutes from "./src/modules/order/order.routes";
 import courierRoutes from "./src/modules/couriers/courier.routes";
 import shipmentsRoutes, { publicShipmentRouter } from "./src/modules/shipments/shipments.routes";
 import webhookRoutes from "./src/modules/webhooks/webhook.routes";
+import billingRoutes from "./src/modules/billing/billing.routes";
 
 export function createApp() {
     const app = express();
@@ -47,6 +48,7 @@ export function createApp() {
     app.use("/api/shipments", shipmentsRoutes);
     app.use("/api/public/track", publicShipmentRouter);
     app.use("/api/webhooks", webhookRoutes);
+    app.use("/api/billing", billingRoutes);
 
     // Health check — pings the DB. 200 = all good, 503 = DB unreachable.
     app.get("/health", async (_req, res) => {

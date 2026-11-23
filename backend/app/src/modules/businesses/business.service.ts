@@ -1,4 +1,4 @@
-import { currency, InvitationStatus, Role } from "../../../generated/prisma/enums.js";
+import { currency, InvitationStatus, PlanType, Role, SubscriptionStatus } from "../../../generated/prisma/enums.js";
 import { sendInviteEmail } from "../../lib/mailer.js";
 import { prisma } from "../../lib/prisma.js";
 import { ApiError } from "../../utils/AppError.js";
@@ -14,7 +14,7 @@ export class BusinessService {
             throw new ApiError(409, "This slug is already taken");
         }
 
-        // Create business AND membership in a single transaction
+        // Create business, membership, AND subscription in a single transaction
         const business = await prisma.$transaction(async (tx) => {
             const newBusiness = await tx.business.create({
                 data: { name: data.name, slug: data.slug },
@@ -24,7 +24,20 @@ export class BusinessService {
                 data: {
                     userId,
                     businessId: newBusiness.id,
-                    role: Role.OWNER,
+                    role: "OWNER",
+                },
+            });
+
+            // Automatically create the FREE subscription
+            const periodEnd = new Date();
+            periodEnd.setMonth(periodEnd.getMonth() + 1);
+
+            await tx.subscription.create({
+                data: {
+                    businessId: newBusiness.id,
+                    plan: PlanType.FREE,
+                    status: SubscriptionStatus.ACTIVE,
+                    currentPeriodEnd: periodEnd,
                 },
             });
 

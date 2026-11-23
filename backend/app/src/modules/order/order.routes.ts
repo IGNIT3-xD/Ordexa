@@ -4,6 +4,7 @@ import { resolveBusiness, requireRole } from "../../middleware/tenant.middleware
 import { listOrders, updateOrderStatus } from "./order.controller.js";
 import { getOrdersQuerySchema, updateOrderStatusSchema } from "./order.schema.js";
 import { Role } from "../../../generated/prisma/enums.js";
+import { enforceQuota } from "../../middleware/quota.middleware.js";
 
 const validate = (schema: any) => (req: any, res: any, next: any) => {
     const parsed = schema.parse({ body: req.body, query: req.query, params: req.params });
@@ -30,6 +31,7 @@ router.get("/", validate(getOrdersQuerySchema), listOrders);
 router.patch(
     "/:orderId/status",
     requireRole([Role.OWNER, Role.MANAGER]),
+    enforceQuota,
     validate(updateOrderStatusSchema),
     updateOrderStatus
 );
