@@ -53,3 +53,20 @@ enum CourierProvider {
     PATHAO
     REDEX
 }
+
+enum PlanType {
+    FREE
+    MONTHLY
+    YEARLY
+}
+
+enum SubscriptionStatus {
+    ACTIVE
+    EXPIRED
+}
+
+enum PaymentStatus {
+    PENDING
+    SUCCESS
+    FAILED
+}

@@ -29,6 +29,11 @@ const EnvSchema = z.object({
         .transform((val) => val === "true"),
 
     ENCRYPTION_KEY: z.string().min(1),
+
+    SSLCOMMERZ_STORE_ID: z.string().min(1),
+    SSLCOMMERZ_STORE_PASSWORD: z.string().min(1),
+    SSLCOMMERZ_IS_SANDBOX: z.string().min(1),
+    BACKEND_URL: z.string().min(1),
 });
 
 const parsed = EnvSchema.safeParse(process.env);

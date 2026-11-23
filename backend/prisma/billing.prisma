@@ -1,0 +1,29 @@
+model Subscription {
+    id                 String             @id @default(cuid())
+    businessId         String             @unique
+    plan               PlanType           @default(FREE)
+    status             SubscriptionStatus @default(ACTIVE)
+    currentPeriodStart DateTime           @default(now())
+    currentPeriodEnd   DateTime
+    updatedAt          DateTime           @updatedAt
+
+    business Business         @relation(fields: [businessId], references: [id], onDelete: Cascade)
+    payments BillingPayment[]
+
+    @@map("subscriptions")
+}
+
+model BillingPayment {
+    id             String        @id @default(cuid())
+    subscriptionId String
+    amount         Decimal       @db.Decimal(10, 2)
+    currency       String        @default("BDT")
+    tranId         String        @unique // SSLCommerz Transaction ID
+    status         PaymentStatus @default(PENDING)
+    plan           PlanType
+    createdAt      DateTime      @default(now())
+
+    subscription Subscription @relation(fields: [subscriptionId], references: [id])
+
+    @@map("billing_payments")
+}
