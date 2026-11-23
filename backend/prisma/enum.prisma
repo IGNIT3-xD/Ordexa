@@ -38,3 +38,18 @@ enum OrderStatus {
     CANCELLED
     REJECTED
 }
+
+enum ShipmentStatus {
+    PENDING
+    BOOKED
+    IN_TRANSIT
+    DELIVERED
+    CANCELLED
+    FAILED
+}
+
+enum CourierProvider {
+    STEADFAST
+    PATHAO
+    REDEX
+}

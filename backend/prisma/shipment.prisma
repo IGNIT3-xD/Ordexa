@@ -1,0 +1,45 @@
+model CourierConnection {
+    id         String          @id @default(cuid())
+    businessId String
+    provider   CourierProvider @default(STEADFAST)
+    apiKey     String
+    secretKey  String
+    isActive   Boolean         @default(true)
+    createdAt  DateTime        @default(now())
+    updatedAt  DateTime        @updatedAt
+
+    business Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
+
+    @@unique([businessId, provider])
+    @@map("courier_connections")
+}
+
+model Shipment {
+    id            String          @id @default(cuid())
+    businessId    String
+    orderId       String          @unique
+    provider      CourierProvider @default(STEADFAST)
+    consignmentId String?
+    trackingCode  String?
+    status        ShipmentStatus  @default(PENDING)
+    createdAt     DateTime        @default(now())
+    updatedAt     DateTime        @updatedAt
+
+    order  Order           @relation(fields: [orderId], references: [id], onDelete: Cascade)
+    events ShipmentEvent[]
+
+    @@index([businessId, status])
+    @@map("shipments")
+}
+
+model ShipmentEvent {
+    id          String   @id @default(cuid())
+    shipmentId  String
+    status      String
+    description String?
+    eventTime   DateTime @default(now())
+
+    shipment Shipment @relation(fields: [shipmentId], references: [id], onDelete: Cascade)
+
+    @@map("shipment_events")
+}

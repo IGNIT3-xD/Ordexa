@@ -9,12 +9,13 @@ model Business {
     createdAt DateTime @default(now())
     updatedAt DateTime @updatedAt
 
-    memberships      Membership[]
-    invitations      Invitation[]
-    products         Product[]
-    orderForms       OrderForm[]
-    orderSubmissions OrderSubmission[]
-    orders           Order[]
+    memberships        Membership[]
+    invitations        Invitation[]
+    products           Product[]
+    orderForms         OrderForm[]
+    orderSubmissions   OrderSubmission[]
+    orders             Order[]
+    courierConnections CourierConnection[]
 
     @@map("businesses")
 }
