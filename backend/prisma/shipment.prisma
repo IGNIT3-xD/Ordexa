@@ -15,12 +15,13 @@ model CourierConnection {
 }
 
 model Shipment {
-    id            String          @id @default(cuid())
+    id            String          @id @default(uuid())
     businessId    String
     orderId       String          @unique
     provider      CourierProvider @default(STEADFAST)
     consignmentId String?
     trackingCode  String?
+    trackingToken String          @unique
     status        ShipmentStatus  @default(PENDING)
     createdAt     DateTime        @default(now())
     updatedAt     DateTime        @updatedAt
@@ -33,7 +34,7 @@ model Shipment {
 }
 
 model ShipmentEvent {
-    id          String   @id @default(cuid())
+    id          String   @id @default(uuid())
     shipmentId  String
     status      String
     description String?

@@ -4,6 +4,7 @@ import { redisConnection } from "../lib/queue.js";
 import { SteadfastAdapter } from "../modules/couriers/steadfast.adapter.js";
 import { decrypt } from "../lib/encryption.js";
 import { ShipmentStatus } from "../../generated/prisma/enums.js";
+import { env } from "../config/env.js";
 
 export const shipmentWorker = new Worker(
     "shipment-queue",
@@ -82,6 +83,10 @@ export const shipmentWorker = new Worker(
             });
 
             console.log(`✅ Shipment booked for Order ${shipment.order.orderNumber}`);
+
+            const trackingLink = `${env.FRONTEND_URL}/track/${shipment.trackingToken}`;
+            console.log(`📧 Queueing tracking notification to ${shipment.order.customerPhone} with link: ${trackingLink}`);
+
         } catch (error) {
             // Only mark as FAILED after the final retry attempt.
             // While retries are still pending, leave it as PENDING so UI shows "Processing…"
