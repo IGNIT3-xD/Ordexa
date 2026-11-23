@@ -25,3 +25,7 @@ redisConnection.on("connect", () => {
 export const cleanupQueue = new Queue("user-cleanup", {
     connection: redisConnection,
 });
+
+export const shipmentQueue = new Queue("shipment-queue", {
+    connection: redisConnection,
+});

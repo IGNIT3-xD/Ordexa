@@ -14,6 +14,8 @@ import productRoutes from "./src/modules/products/product.routes";
 import { dashboardFormRouter, publicFormRouter } from "./src/modules/forms/forms.routes";
 import submissionRoutes from "./src/modules/order-submissions/submission.routes";
 import orderRoutes from "./src/modules/order/order.routes";
+import courierRoutes from "./src/modules/couriers/courier.routes";
+import shipmentsRoutes from "./src/modules/shipments/shipments.routes";
 
 export function createApp() {
     const app = express();
@@ -40,6 +42,8 @@ export function createApp() {
     app.use("/api/public/orders", publicFormRouter);
     app.use("/api/submissions", submissionRoutes);
     app.use("/api/orders", orderRoutes);
+    app.use("/api/couriers", courierRoutes);
+    app.use("/api/shipments", shipmentsRoutes);
 
     // Health check — pings the DB. 200 = all good, 503 = DB unreachable.
     app.get("/health", async (_req, res) => {

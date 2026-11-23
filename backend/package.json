@@ -5,7 +5,8 @@
   "main": "index.js",
   "scripts": {
     "dev": "tsx watch app/server.ts",
-    "worker": "tsx watch app/src/workers/cleanup.worker.ts",
+    "cleanup:worker": "tsx watch app/src/workers/cleanup.worker.ts",
+    "shipment:worker": "tsx watch app/src/workers/shipment.worker.ts",
     "start": "node dist/server.js",
     "build": "tsc -p tsconfig.json",
     "typecheck": "tsc --noEmit"
@@ -30,6 +31,7 @@
   "dependencies": {
     "@prisma/adapter-pg": "^7.10.1",
     "@prisma/client": "^7.10.1",
+    "axios": "^1.21.1",
     "bcryptjs": "^3.0.3",
     "bullmq": "^6.7.8",
     "cloudinary": "^2.11.0",

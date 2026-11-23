@@ -66,6 +66,7 @@ model Order {
     business   Business        @relation(fields: [businessId], references: [id], onDelete: Cascade)
     submission OrderSubmission @relation(fields: [submissionId], references: [id])
     items      OrderItem[]
+    shipment   Shipment?
 
     @@index([businessId, status])
     @@map("orders")
