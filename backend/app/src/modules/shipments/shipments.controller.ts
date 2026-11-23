@@ -52,3 +52,8 @@ export const retryShipment = asyncHandler(async (req: Request, res: Response) =>
 
     res.status(202).json(result);
 });
+
+export const getPublicTracking = asyncHandler(async (req: Request, res: Response) => {
+    const result = await ShipmentService.getPublicTracking(req.params.token as string);
+    res.json(result);
+});

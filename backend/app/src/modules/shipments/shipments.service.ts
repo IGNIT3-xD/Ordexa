@@ -2,6 +2,7 @@ import { prisma } from "../../lib/prisma.js";
 import { ApiError } from "../../utils/AppError.js";
 import { OrderStatus, ShipmentStatus } from "../../../generated/prisma/enums.js";
 import { shipmentQueue } from "../../lib/queue.js";
+import crypto from "node:crypto";
 
 const jobOptions = {
     attempts: 3,
@@ -37,6 +38,7 @@ export class ShipmentService {
                 businessId,
                 orderId: order.id,
                 status: ShipmentStatus.PENDING,
+                trackingToken: crypto.randomBytes(32).toString("hex")
             },
         });
 
@@ -142,5 +144,42 @@ export class ShipmentService {
         await shipmentQueue.add("book-steadfast", { shipmentId: shipment.id }, jobOptions);
 
         return { message: "Shipment retry queued successfully", shipment: updatedShipment };
+    }
+
+    static async getPublicTracking(trackingToken: string) {
+        const shipment = await prisma.shipment.findUnique({
+            where: { trackingToken },
+            include: {
+                order: {
+                    select: {
+                        orderNumber: true,
+                        customerName: true,
+                        deliveryAddress: true,
+                        items: { select: { productName: true, variantName: true, quantity: true } },
+                    },
+                },
+                events: {
+                    orderBy: { eventTime: "desc" },
+                },
+            },
+        });
+
+        if (!shipment)
+            throw new ApiError(404, "Invalid tracking link");
+
+        return {
+            orderNumber: shipment.order.orderNumber,
+            customerName: shipment.order.customerName,
+            deliveryAddress: shipment.order.deliveryAddress,
+            items: shipment.order.items,
+            provider: shipment.provider,
+            trackingCode: shipment.trackingCode,
+            status: shipment.status,
+            timeline: shipment.events.map((e) => ({
+                status: e.status,
+                description: e.description,
+                eventTime: e.eventTime,
+            })),
+        };
     }
 }

@@ -1,7 +1,7 @@
 import { Router } from "express";
 import { protect } from "../../middleware/auth.middleware.js";
 import { resolveBusiness, requireRole } from "../../middleware/tenant.middleware.js";
-import { bookShipment, listShipments, getShipment, retryShipment } from "./shipments.controller.js";
+import { bookShipment, listShipments, getShipment, retryShipment, getPublicTracking } from "./shipments.controller.js";
 import { getShipmentsQuerySchema } from "./shipments.schema.js";
 import { Role } from "../../../generated/prisma/enums.js";
 
@@ -35,5 +35,8 @@ router.post(
     requireRole([Role.OWNER, Role.MANAGER]),
     retryShipment
 );
+
+export const publicShipmentRouter = Router();
+publicShipmentRouter.get("/:token", getPublicTracking);
 
 export default router;
