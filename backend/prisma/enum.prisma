@@ -70,3 +70,9 @@ enum PaymentStatus {
     SUCCESS
     FAILED
 }
+
+enum NotificationStatus {
+    PENDING
+    SENT
+    FAILED
+}

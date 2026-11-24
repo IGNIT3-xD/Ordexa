@@ -34,6 +34,11 @@ const EnvSchema = z.object({
     SSLCOMMERZ_STORE_PASSWORD: z.string().min(1),
     SSLCOMMERZ_IS_SANDBOX: z.string().min(1),
     BACKEND_URL: z.string().min(1),
+
+    META_APP_ID: z.string().min(1),
+    META_APP_SECRET: z.string().min(1),
+    META_REDIRECT_URI: z.string().min(1),
+    META_VERIFY_TOKEN: z.string().min(1),
 });
 
 const parsed = EnvSchema.safeParse(process.env);
