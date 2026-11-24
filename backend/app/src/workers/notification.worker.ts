@@ -10,7 +10,7 @@ export const notificationWorker = new Worker(
     "notification-queue",
     async (job) => {
         if (job.name === "send-order-confirmation") {
-            const { businessId, orderId } = job.data;
+            const { businessId, orderId, invoiceUrl } = job.data;
 
             // 1. Fetch Order and Submission details
             const order = await prisma.order.findUnique({
@@ -37,9 +37,8 @@ export const notificationWorker = new Worker(
                 ? `${env.FRONTEND_URL}/track/${order.shipment.trackingToken}`
                 : "Tracking will be available soon.";
 
-            const invoiceUrl = `${env.FRONTEND_URL}/invoice/${order.id}`; // Mock invoice link
 
-            const messageText = `Hi ${order.customerName},\n\nThank you for your order! Your order #${order.orderNumber} is confirmed.\n\n📍 Track your parcel: ${trackingUrl}\n🧾 View your invoice: ${invoiceUrl}\n\nIf you need any help, we are always here for you.`;
+            const messageText = `Hi ${order.customerName},\n\nThank you for your order! Your order #${order.orderNumber} is confirmed.\n\n📍 Track your parcel: ${trackingUrl}\n🧾 Download your invoice (PDF): ${invoiceUrl}\n\nIf you need any help, we are always here for you.`;
 
             // 4. Create Notification record & Send
             const notification = await prisma.notification.create({
