@@ -1,6 +1,7 @@
 import { prisma } from "../../lib/prisma.js";
 import { ApiError } from "../../utils/AppError.js";
 import { OrderStatus } from "../../../generated/prisma/enums.js";
+import { notificationQueue } from "../../lib/queue.js";
 
 export class OrderService {
     static async updateOrderStatus(businessId: string, orderId: string, newStatus: OrderStatus, actorId: string) {
@@ -66,11 +67,19 @@ export class OrderService {
                 }
             }
 
-            // Update the order status
-            return tx.order.update({
+            const updatedOrder = await tx.order.update({
                 where: { id: orderId },
                 data: { status: newStatus },
             });
+
+            if (newStatus === OrderStatus.CONFIRM) {
+                await notificationQueue.add("send-order-confirmation", {
+                    businessId,
+                    orderId: updatedOrder.id,
+                });
+            }
+
+            return updatedOrder
         });
     }
 

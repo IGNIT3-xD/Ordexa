@@ -39,6 +39,7 @@ model OrderSubmission {
     items           Json
     status          OrderSubmissionStatus @default(PENDING)
     rejectionReason String?
+    customerPsid    String?
     createdAt       DateTime              @default(now())
 
     business  Business  @relation(fields: [businessId], references: [id], onDelete: Cascade)

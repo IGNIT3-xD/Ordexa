@@ -16,18 +16,18 @@ router.get("/connect", protect, resolveBusiness, connectMeta);
 router.get("/webhook", verifyWebhook);
 router.post("/webhook", handleWebhook);
 
-router.post("/test-notification", protect, resolveBusiness, async (req, res) => {
-    const { psid } = req.body;
+// router.post("/test-notification", protect, resolveBusiness, async (req, res) => {
+//     const { psid } = req.body;
 
-    await notificationQueue.add("send-message", {
-        businessId: req.tenant!.businessId,
-        orderId: "test_order_123",
-        psid: psid,
-        template: "order_confirmed_update",
-        variables: ["Rahim", "ORD-123", "https://ordexa.com/track/123"]
-    });
+//     await notificationQueue.add("send-message", {
+//         businessId: req.tenant!.businessId,
+//         orderId: "test_order_123",
+//         psid: psid,
+//         template: "order_confirmed_update",
+//         variables: ["Rahim", "ORD-123", "https://ordexa.com/track/123"]
+//     });
 
-    res.json({ message: "Notification job queued" });
-});
+//     res.json({ message: "Notification job queued" });
+// });
 
 export default router;
