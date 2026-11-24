@@ -5,6 +5,7 @@ import { listOrders, updateOrderStatus } from "./order.controller.js";
 import { getOrdersQuerySchema, updateOrderStatusSchema } from "./order.schema.js";
 import { Role } from "../../../generated/prisma/enums.js";
 import { enforceQuota } from "../../middleware/quota.middleware.js";
+import { downloadInvoice } from "./public-invoice.controller.js";
 
 const validate = (schema: any) => (req: any, res: any, next: any) => {
     const parsed = schema.parse({ body: req.body, query: req.query, params: req.params });
@@ -35,5 +36,8 @@ router.patch(
     validate(updateOrderStatusSchema),
     updateOrderStatus
 );
+
+export const invoiceRouter = Router();
+invoiceRouter.get("/:orderId", downloadInvoice);
 
 export default router;

@@ -13,7 +13,7 @@ import businessRoutes from "./src/modules/businesses/business.routes";
 import productRoutes from "./src/modules/products/product.routes";
 import { dashboardFormRouter, publicFormRouter } from "./src/modules/forms/forms.routes";
 import submissionRoutes from "./src/modules/order-submissions/submission.routes";
-import orderRoutes from "./src/modules/order/order.routes";
+import orderRoutes, { invoiceRouter } from "./src/modules/order/order.routes";
 import courierRoutes from "./src/modules/couriers/courier.routes";
 import shipmentsRoutes, { publicShipmentRouter } from "./src/modules/shipments/shipments.routes";
 import webhookRoutes from "./src/modules/webhooks/webhook.routes";
@@ -45,6 +45,7 @@ export function createApp() {
     app.use("/api/public/orders", publicFormRouter);
     app.use("/api/submissions", submissionRoutes);
     app.use("/api/orders", orderRoutes);
+    app.use("/api/public/invoices", invoiceRouter);
     app.use("/api/couriers", courierRoutes);
     app.use("/api/shipments", shipmentsRoutes);
     app.use("/api/public/track", publicShipmentRouter);
