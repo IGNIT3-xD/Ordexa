@@ -17,6 +17,7 @@ model Business {
     orders             Order[]
     courierConnections CourierConnection[]
     subscription       Subscription?
+    socialConnection   SocialConnection?
 
     @@map("businesses")
 }
