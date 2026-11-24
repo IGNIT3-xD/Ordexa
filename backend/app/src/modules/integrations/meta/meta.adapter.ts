@@ -27,14 +27,13 @@ export class MetaAdapter {
     }
 
     // 3. Send a Utility Template Message
-    // Replace your sendUtilityTemplate with this for NOW:
     static async sendMessage(pageAccessToken: string, psid: string, text: string) {
         try {
             const response = await axios.post(
                 `${this.baseUrl}/me/messages`,
                 {
                     recipient: { id: psid },
-                    message: { text: text }, // Standard text message
+                    message: { text: text },
                 },
                 {
                     params: { access_token: pageAccessToken },
