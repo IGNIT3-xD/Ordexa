@@ -17,6 +17,7 @@
   "keywords": [],
   "type": "module",
   "devDependencies": {
+    "@flydotio/dockerfile": "^0.7.15",
     "@types/bcryptjs": "^2.4.6",
     "@types/cookie-parser": "^1.4.10",
     "@types/cors": "^2.8.19",
@@ -51,6 +52,7 @@
     "nodemailer": "^10.6.0",
     "pdfkit": "^0.21.0",
     "pg": "^8.23.1",
+    "vercel": "^66.6.0",
     "zod": "^4.6.7"
   }
 }

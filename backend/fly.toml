@@ -1,0 +1,14 @@
+app = "ordexa-worker"
+primary_region = "sin"
+
+[build]
+  dockerfile = "Dockerfile"
+
+[processes]
+  worker = "npm run start:worker"
+
+[[vm]]
+  size = "shared-cpu-1x"
+  memory = "512mb"
+
+# Do NOT add [http_service] or [[services]] here
