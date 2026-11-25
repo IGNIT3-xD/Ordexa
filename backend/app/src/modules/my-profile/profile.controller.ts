@@ -1,7 +1,7 @@
 import { type Request, type Response } from "express";
-import { asyncHandler } from "../../utils/AsyncHandler";
-import { UserService } from "./profile.service";
-import { ApiError } from "../../utils/AppError";
+import { asyncHandler } from "../../utils/AsyncHandler.js";
+import { UserService } from "./profile.service.js";
+import { ApiError } from "../../utils/AppError.js";
 
 export const getProfile = asyncHandler(async (req: Request, res: Response) => {
     const userId = (req as any).userId;

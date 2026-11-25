@@ -24,7 +24,7 @@ export class WebhookService {
         });
 
         if (!shipment) {
-            console.warn(`Shipment not found for webhook: ${consignment_id} / ${invoice}`);
+            // console.warn(`Shipment not found for webhook: ${consignment_id} / ${invoice}`);
             return;
         }
 
@@ -73,6 +73,6 @@ export class WebhookService {
             })
         ]);
 
-        console.log(`📦 Webhook processed: Order ${invoice} is now ${newStatus}`);
+        // console.log(`📦 Webhook processed: Order ${invoice} is now ${newStatus}`);
     }
 }

@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { CourierProvider } from "../../../generated/prisma/enums";
+import { CourierProvider } from "../../../generated/prisma/enums.js";
 
 export const connectCourierSchema = z.object({
     body: z.object({

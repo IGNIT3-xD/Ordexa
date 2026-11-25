@@ -48,7 +48,7 @@ export class AnalyticsService {
         });
 
         // Group by date string (YYYY-MM-DD)
-        const groupedData = orders.reduce((acc, order) => {
+        const groupedData = orders.reduce((acc: any, order: any) => {
             const date = order.createdAt.toISOString().split("T")[0] as string;
             if (!acc[date]) acc[date] = 0;
             acc[date] += Number(order.totalAmount);
@@ -80,7 +80,7 @@ export class AnalyticsService {
             take: 5,
         });
 
-        return topProducts.map((item) => ({
+        return topProducts.map((item: any) => ({
             productName: item.productName,
             unitsSold: item._sum.quantity || 0,
             revenue: item._sum.lineTotal || 0,

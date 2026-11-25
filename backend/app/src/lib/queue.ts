@@ -1,8 +1,8 @@
 import { Queue } from "bullmq";
-import IORedis from "ioredis";
+import { Redis } from "ioredis";
 import { env } from "../config/env.js";
 
-export const redisConnection = new IORedis({
+export const redisConnection = new Redis({
     host: env.REDIS_HOST,
     port: env.REDIS_PORT,
     password: env.REDIS_PASSWORD || undefined,
@@ -14,7 +14,7 @@ export const redisConnection = new IORedis({
 });
 
 // Optional: Log connection errors so you know if the host/pass is wrong
-redisConnection.on("error", (err) => {
+redisConnection.on("error", (err: any) => {
     console.error("❌ Redis Connection Error:", err.message);
 });
 

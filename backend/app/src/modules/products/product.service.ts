@@ -165,7 +165,7 @@ export class ProductService {
         }
 
         // Update stock AND log the movement inside a transaction
-        return prisma.$transaction(async (tx) => {
+        return prisma.$transaction(async (tx: any) => {
             const updated = await tx.productVariant.update({
                 where: { id: variantId },
                 data: { stock: { increment: data.quantity } },

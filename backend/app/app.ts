@@ -4,24 +4,24 @@ import express, {
     type NextFunction,
 } from "express";
 import cors from "cors";
-import { prisma } from "./src/lib/prisma";
-import { errorHandler } from "./src/middleware/error.middleware";
-import authRoutes from "./src/modules/auth/auth.routes";
+import { prisma } from "./src/lib/prisma.js";
+import { errorHandler } from "./src/middleware/error.middleware.js";
+import authRoutes from "./src/modules/auth/auth.routes.js";
 import cookieParser from "cookie-parser";
-import profileRoutes from "./src/modules/my-profile/profile.routes";
-import businessRoutes from "./src/modules/businesses/business.routes";
-import productRoutes from "./src/modules/products/product.routes";
-import { dashboardFormRouter, publicFormRouter } from "./src/modules/forms/forms.routes";
-import submissionRoutes from "./src/modules/order-submissions/submission.routes";
-import orderRoutes, { invoiceRouter } from "./src/modules/order/order.routes";
-import courierRoutes from "./src/modules/couriers/courier.routes";
-import shipmentsRoutes, { publicShipmentRouter } from "./src/modules/shipments/shipments.routes";
-import webhookRoutes from "./src/modules/webhooks/webhook.routes";
-import billingRoutes from "./src/modules/billing/billing.routes";
-import metaRoutes from "./src/modules/integrations/meta/meta.routes";
-import analyticsRoutes from "./src/modules/analytics/analytics.routes";
-import fraudRoutes from "./src/modules/fraud/fraud.routes";
-import { env } from "./src/config/env";
+import profileRoutes from "./src/modules/my-profile/profile.routes.js";
+import businessRoutes from "./src/modules/businesses/business.routes.js";
+import productRoutes from "./src/modules/products/product.routes.js";
+import { dashboardFormRouter, publicFormRouter } from "./src/modules/forms/forms.routes.js";
+import submissionRoutes from "./src/modules/order-submissions/submission.routes.js";
+import orderRoutes, { invoiceRouter } from "./src/modules/order/order.routes.js";
+import courierRoutes from "./src/modules/couriers/courier.routes.js";
+import shipmentsRoutes, { publicShipmentRouter } from "./src/modules/shipments/shipments.routes.js";
+import webhookRoutes from "./src/modules/webhooks/webhook.routes.js";
+import billingRoutes from "./src/modules/billing/billing.routes.js";
+import metaRoutes from "./src/modules/integrations/meta/meta.routes.js";
+import analyticsRoutes from "./src/modules/analytics/analytics.routes.js";
+import fraudRoutes from "./src/modules/fraud/fraud.routes.js";
+import { env } from "./src/config/env.js";
 
 export function createApp() {
     const app = express();

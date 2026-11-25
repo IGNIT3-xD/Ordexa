@@ -7,7 +7,7 @@ import { env } from "../../config/env.js";
 
 export class OrderService {
     static async updateOrderStatus(businessId: string, orderId: string, newStatus: OrderStatus, actorId: string) {
-        return prisma.$transaction(async (tx) => {
+        return prisma.$transaction(async (tx: any) => {
             const order = await tx.order.findFirst({
                 where: { id: orderId, businessId },
                 include: { items: true },
@@ -78,7 +78,7 @@ export class OrderService {
                 where: { id: orderId },
                 data: {
                     status: newStatus,
-                    invoiceUrl: invoiceUrl 
+                    invoiceUrl: invoiceUrl
                 },
             });
 

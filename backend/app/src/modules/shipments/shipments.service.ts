@@ -175,7 +175,7 @@ export class ShipmentService {
             provider: shipment.provider,
             trackingCode: shipment.trackingCode,
             status: shipment.status,
-            timeline: shipment.events.map((e) => ({
+            timeline: shipment.events.map((e: any) => ({
                 status: e.status,
                 description: e.description,
                 eventTime: e.eventTime,
