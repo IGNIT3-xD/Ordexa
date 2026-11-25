@@ -8,8 +8,10 @@
     "cleanup:worker": "tsx watch app/src/workers/cleanup.worker.ts",
     "shipment:worker": "tsx watch app/src/workers/shipment.worker.ts",
     "notification:worker": "tsx watch app/src/workers/notification.worker.ts",
-    "start": "node dist/server.js",
-    "build": "tsc -p tsconfig.json",
+    "build": "prisma generate && tsc -p tsconfig.json",
+    "postinstall": "prisma generate",
+    "start": "node dist/app/server.js",
+    "start:worker": "node dist/app/src/workers/index.js",
     "typecheck": "tsc --noEmit"
   },
   "keywords": [],

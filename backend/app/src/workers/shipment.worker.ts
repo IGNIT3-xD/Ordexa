@@ -18,7 +18,8 @@ export const shipmentWorker = new Worker(
             include: { order: true },
         });
 
-        if (!shipment) throw new Error("Shipment not found");
+        if (!shipment)
+            throw new Error("Shipment not found");
 
         // 1. Get courier credentials
         const connection = await prisma.courierConnection.findUnique({
@@ -60,9 +61,7 @@ export const shipmentWorker = new Worker(
                         status: ShipmentStatus.BOOKED,
                     },
                 });
-                console.log(
-                    `ℹ️ Shipment already existed on Steadfast for Order ${shipment.order.orderNumber} — reconciled.`
-                );
+                // console.log(`Shipment already existed on Steadfast for Order ${shipment.order.orderNumber} — reconciled.`);
                 return;
             }
 
@@ -82,10 +81,10 @@ export const shipmentWorker = new Worker(
                 },
             });
 
-            console.log(`✅ Shipment booked for Order ${shipment.order.orderNumber}`);
+            // console.log(`✅ Shipment booked for Order ${shipment.order.orderNumber}`);
 
             const trackingLink = `${env.FRONTEND_URL}/track/${shipment.trackingToken}`;
-            console.log(`📧 Queueing tracking notification to ${shipment.order.customerPhone} with link: ${trackingLink}`);
+            // console.log(`📧 Queueing tracking notification to ${shipment.order.customerPhone} with link: ${trackingLink}`);
 
         } catch (error) {
             // Only mark as FAILED after the final retry attempt.
@@ -98,13 +97,9 @@ export const shipmentWorker = new Worker(
                     where: { id: shipmentId },
                     data: { status: ShipmentStatus.FAILED },
                 });
-                console.error(
-                    `❌ Shipment failed permanently for Order ${shipment.order.orderNumber}`
-                );
+                // console.error(`❌ Shipment failed permanently for Order ${shipment.order.orderNumber}`);
             } else {
-                console.warn(
-                    `⚠️ Shipment attempt ${job.attemptsMade + 1}/${totalAttempts} failed for Order ${shipment.order.orderNumber} — will retry.`
-                );
+                console.warn(`⚠️ Shipment attempt ${job.attemptsMade + 1}/${totalAttempts} failed for Order ${shipment.order.orderNumber} — will retry.`);
             }
 
             throw error; // Let BullMQ handle the retry
@@ -117,9 +112,9 @@ export const shipmentWorker = new Worker(
 );
 
 shipmentWorker.on("failed", (job, err) => {
-    console.error(`❌ Shipment job ${job?.id} failed:`, err.message);
+    // console.error(`❌ Shipment job ${job?.id} failed:`, err.message);
 });
 
 shipmentWorker.on("completed", (job) => {
-    console.log(`✅ Shipment job ${job.id} completed`);
+    // console.log(`✅ Shipment job ${job.id} completed`);
 });

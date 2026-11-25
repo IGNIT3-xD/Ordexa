@@ -5,7 +5,7 @@ const EnvSchema = z.object({
     PORT: z.coerce.number().default(3000),
     DATABASE_URL: z.string().min(1),
     BACKEND_API_URL: z.url(),
-    FRONTEND_URL: z.string().min(1),
+    FRONTEND_URL: z.url(),
 
     JWT_ACCESS_SECRET: z.string(),
     JWT_REFRESH_SECRET: z.string(),

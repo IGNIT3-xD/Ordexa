@@ -21,6 +21,7 @@ import billingRoutes from "./src/modules/billing/billing.routes";
 import metaRoutes from "./src/modules/integrations/meta/meta.routes";
 import analyticsRoutes from "./src/modules/analytics/analytics.routes";
 import fraudRoutes from "./src/modules/fraud/fraud.routes";
+import { env } from "./src/config/env";
 
 export function createApp() {
     const app = express();
@@ -30,7 +31,7 @@ export function createApp() {
     app.use(express.urlencoded({ extended: true }));
     app.use(cookieParser())
     app.use(cors({
-        origin: "http://localhost:5000",
+        origin: env.FRONTEND_URL || "http://localhost:3000",
         credentials: true,
     }));
 
