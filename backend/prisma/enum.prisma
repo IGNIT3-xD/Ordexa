@@ -76,3 +76,10 @@ enum NotificationStatus {
     SENT
     FAILED
 }
+
+enum FraudStatus {
+    UNCHECKED
+    SAFE
+    RISKY
+    FAILED
+}

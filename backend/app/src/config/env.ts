@@ -4,7 +4,7 @@ const EnvSchema = z.object({
     NODE_ENV: z.enum(["development", "test", "production"]).default("development"),
     PORT: z.coerce.number().default(3000),
     DATABASE_URL: z.string().min(1),
-    BACKEND_API_URL: z.string().min(1),
+    BACKEND_API_URL: z.url(),
     FRONTEND_URL: z.string().min(1),
 
     JWT_ACCESS_SECRET: z.string(),
@@ -33,12 +33,15 @@ const EnvSchema = z.object({
     SSLCOMMERZ_STORE_ID: z.string().min(1),
     SSLCOMMERZ_STORE_PASSWORD: z.string().min(1),
     SSLCOMMERZ_IS_SANDBOX: z.string().min(1),
-    BACKEND_URL: z.string().min(1),
+    BACKEND_URL: z.url(),
 
     META_APP_ID: z.string().min(1),
     META_APP_SECRET: z.string().min(1),
     META_REDIRECT_URI: z.string().min(1),
     META_VERIFY_TOKEN: z.string().min(1),
+
+    FRAUDBD_API_KEY: z.string().min(1),
+    FRAUDBD_API_URL: z.url(),
 });
 
 const parsed = EnvSchema.safeParse(process.env);

@@ -1,0 +1,13 @@
+model FraudCheck {
+    id         String   @id @default(uuid())
+    businessId String
+    phone      String
+    score      Int
+    status     String
+    data       Json
+    createdAt  DateTime @default(now())
+
+    @@unique([businessId, phone])
+    @@index([phone])
+    @@map("fraud_checks")
+}
