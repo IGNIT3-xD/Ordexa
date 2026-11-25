@@ -57,7 +57,7 @@ export class BusinessService {
             orderBy: { createdAt: "desc" },
         });
 
-        return memberships.map((m) => ({
+        return memberships.map((m: any) => ({
             ...m.business,
             role: m.role,
         }));

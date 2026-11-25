@@ -1,6 +1,6 @@
 import { type Request, type Response } from "express";
 import { AuthService } from "./auth.service.js";
-import { asyncHandler } from "../../utils/AsyncHandler";
+import { asyncHandler } from "../../utils/AsyncHandler.js";
 import { ApiError } from "../../utils/AppError.js";
 import { env } from "../../config/env.js";
 

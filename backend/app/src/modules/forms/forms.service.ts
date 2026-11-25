@@ -110,7 +110,7 @@ export class FormService {
 
     // PUBLIC: Submit the order
     static async submitOrder(rawToken: string, data: any) {
-        return prisma.$transaction(async (tx) => {
+        return prisma.$transaction(async (tx: any) => {
             const token = await tx.formToken.findUnique({
                 where: { token: rawToken }, // Query by raw token
                 include: { form: true },

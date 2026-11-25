@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { OrderSubmissionStatus } from "../../../generated/prisma/enums";
+import { OrderSubmissionStatus } from "../../../generated/prisma/enums.js";
 
 export const getSubmissionsQuerySchema = z.object({
     query: z.object({

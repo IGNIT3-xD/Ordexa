@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { ProductStatus } from "../../../generated/prisma/enums";
+import { ProductStatus } from "../../../generated/prisma/enums.js";
 
 const variantSchema = z.object({
     sku: z.string().optional(),

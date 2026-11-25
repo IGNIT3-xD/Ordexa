@@ -45,7 +45,7 @@ export class SubmissionService {
         });
 
         const hydratedItems = items.map((item) => {
-            const variant = variants.find((v) => v.id === item.variantId);
+            const variant = variants.find((v: any) => v.id === item.variantId);
             return {
                 ...item,
                 productName: variant?.product.name || "Unknown Product (Deleted)",
@@ -77,7 +77,7 @@ export class SubmissionService {
     }
 
     static async convertToOrder(businessId: string, submissionId: string) {
-        return prisma.$transaction(async (tx) => {
+        return prisma.$transaction(async (tx: any) => {
             // 1. Fetch submission
             const submission = await tx.orderSubmission.findFirst({
                 where: { id: submissionId, businessId },
@@ -112,7 +112,7 @@ export class SubmissionService {
             const orderItemsData = [];
 
             for (const item of items) {
-                const variant = variants.find((v) => v.id === item.variantId);
+                const variant = variants.find((v: any) => v.id === item.variantId);
                 if (!variant || variant.product.isDeleted) {
                     throw new ApiError(400, `Product ${variant?.product.name} is archived or deleted`);
                 }

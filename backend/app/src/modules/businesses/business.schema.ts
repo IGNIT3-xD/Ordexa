@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { currency, Role } from "../../../generated/prisma/enums";
+import { currency, Role } from "../../../generated/prisma/enums.js";
 
 export const createBusinessSchema = z.object({
     body: z.object({

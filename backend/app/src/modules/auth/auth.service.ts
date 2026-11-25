@@ -1,13 +1,13 @@
 import bcrypt from "bcryptjs";
-import { prisma } from "../../lib/prisma";
-import { ApiError } from "../../utils/AppError";
-import type { ILoginInput, IRegisterInput } from "./auth.type";
-import { uploadToCloudinary } from "../../lib/cloudinary";
-import { sendPasswordResetEmail, sendVerificationEmail, sendWelcomeEmail } from "../../lib/mailer";
-import { cleanupQueue } from "../../lib/queue";
-import { generateAccessToken, generateRefreshToken } from "../../lib/jwt";
+import { prisma } from "../../lib/prisma.js";
+import { ApiError } from "../../utils/AppError.js";
+import type { ILoginInput, IRegisterInput } from "./auth.type.js";
+import { uploadToCloudinary } from "../../lib/cloudinary.js";
+import { sendPasswordResetEmail, sendVerificationEmail, sendWelcomeEmail } from "../../lib/mailer.js";
+import { cleanupQueue } from "../../lib/queue.js";
+import { generateAccessToken, generateRefreshToken } from "../../lib/jwt.js";
 import { createHash, randomBytes } from "node:crypto";
-import { env } from "../../config/env";
+import { env } from "../../config/env.js";
 import jwt from "jsonwebtoken";
 
 export class AuthService {
@@ -238,7 +238,7 @@ export class AuthService {
                 where: { id: userId },
                 data: { password: hashedPassword },
             }),
-            
+
             prisma.userSession.deleteMany({
                 where: { userId },
             }),
