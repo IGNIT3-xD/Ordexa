@@ -2,6 +2,7 @@ import crypto from "node:crypto";
 import { prisma } from "../../lib/prisma.js";
 import { ApiError } from "../../utils/AppError.js";
 import { OrderStatus, OrderSubmissionStatus } from "../../../generated/prisma/enums.js";
+import { Prisma } from "../../../generated/prisma/client.js";
 
 export class SubmissionService {
     static async listSubmissions(businessId: string, status?: OrderSubmissionStatus, page = 1, limit = 10) {
@@ -77,7 +78,11 @@ export class SubmissionService {
     }
 
     static async convertToOrder(businessId: string, submissionId: string) {
-        return prisma.$transaction(async (tx: any) => {
+        const MAX_ATTEMPTS = 5;
+
+        for (let attempt = 1; attempt <= MAX_ATTEMPTS; attempt++) {
+            try {
+                return await prisma.$transaction(async (tx: any) => {
             // 1. Fetch submission
             const submission = await tx.orderSubmission.findFirst({
                 where: { id: submissionId, businessId },
@@ -130,8 +135,8 @@ export class SubmissionService {
                 });
             }
 
-            // 4. Generate a human-readable Order Number (e.g., ORD-A1B2C3)
-            const orderNumber = `ORD-${crypto.randomBytes(3).toString("hex").toUpperCase()}`;
+            // 4. Generate a globally-unique human-readable Order Number
+            const orderNumber = `ORD-${crypto.randomBytes(8).toString("hex").toUpperCase()}`;
 
             // 5. Create the Order and OrderItems
             const order = await tx.order.create({
@@ -157,8 +162,25 @@ export class SubmissionService {
                 data: { status: OrderSubmissionStatus.CONVERTED },
             });
 
-            return order;
-        });
+                    return order;
+                });
+            } catch (error) {
+                // Retry only on unique-constraint collisions (order number).
+                // A collision on submissionId will surface as "already converted"
+                // on the next attempt because the other transaction committed.
+                const isUniqueViolation =
+                    error instanceof Prisma.PrismaClientKnownRequestError &&
+                    error.code === "P2002";
+
+                if (isUniqueViolation && attempt < MAX_ATTEMPTS) {
+                    continue;
+                }
+
+                throw error;
+            }
+        }
+
+        throw new ApiError(500, "Could not generate a unique order number. Please try again.");
     }
 
     static async updateSubmissionStatus(

@@ -3,12 +3,13 @@ import { prisma } from "../../lib/prisma.js";
 import { ApiError } from "../../utils/AppError.js";
 import { SSLCommerzAdapter } from "./sslcommerz.adapter.js";
 import { PlanType, PaymentStatus, SubscriptionStatus } from "../../../generated/prisma/enums.js";
+import { env } from "../../config/env.js";
+import { addMonths, startOfMonth } from "../../utils/date.js";
 
 export class BillingService {
     // 1. Initialize a Subscription for a new business
     static async initSubscription(businessId: string) {
-        const periodEnd = new Date();
-        periodEnd.setMonth(periodEnd.getMonth() + 1); // 1 month of free usage
+        const periodEnd = addMonths(new Date(), 1); // 1 month of free usage
 
         return prisma.subscription.create({
             data: {
@@ -21,6 +22,10 @@ export class BillingService {
 
     // 2. Checkout for Monthly/Yearly
     static async createCheckout(businessId: string, plan: PlanType, customerDetails: any) {
+        if (plan !== PlanType.MONTHLY && plan !== PlanType.YEARLY) {
+            throw new ApiError(400, "Invalid plan selected");
+        }
+
         const subscription = await prisma.subscription.findUnique({ where: { businessId } });
 
         if (!subscription)
@@ -38,7 +43,7 @@ export class BillingService {
         }
 
         const amount = plan === PlanType.MONTHLY ? 599 : 5999;
-        const tranId = `TXN-${crypto.randomBytes(4).toString("hex").toUpperCase()}`;
+        const tranId = `TXN-${crypto.randomBytes(16).toString("hex").toUpperCase()}`;
 
         // Create a pending payment record
         await prisma.billingPayment.create({
@@ -65,56 +70,100 @@ export class BillingService {
 
     // 3. Handle SSLCommerz Success Callback (IPN)
     static async handlePaymentSuccess(valId: string, tranId: string) {
+        // 1. Validate with SSLCommerz
         const validation = await SSLCommerzAdapter.validatePayment(valId);
 
+        // 2. Strict Validation Checks
         if (validation.status !== "VALID" && validation.status !== "VALIDATED") {
             throw new ApiError(400, "Invalid payment validation");
         }
 
+        if (validation.tran_id !== tranId) {
+            throw new ApiError(400, "Transaction ID mismatch");
+        }
+
+        if (validation.store_id !== env.SSLCOMMERZ_STORE_ID) {
+            throw new ApiError(400, "Store ID mismatch");
+        }
+
+        if (validation.currency !== "BDT") {
+            throw new ApiError(400, "Invalid currency");
+        }
+
+        // 3. Fetch the pending payment
         const payment = await prisma.billingPayment.findUnique({
             where: { tranId },
             include: { subscription: true },
         });
 
-        if (!payment || payment.status === PaymentStatus.SUCCESS) {
-            return { message: "Payment already processed or not found" };
+        if (!payment) {
+            throw new ApiError(404, "Payment record not found");
         }
 
-        const subscription = payment.subscription;
+        if (payment.status === PaymentStatus.SUCCESS) {
+            return { message: "Payment already processed" };
+        }
 
-        // 🚨 CALCULATE NEW END DATE (Stacking Time)
-        // If upgrading from Monthly to Yearly, we start the 1 year from the CURRENT end date, not today.
-        // If expired or FREE, we start from today.
-        const isExpired = subscription.currentPeriodEnd < new Date();
-        const baseDate = isExpired ? new Date() : subscription.currentPeriodEnd;
+        // 4. Verify the amount matches the plan!
+        if (Number(validation.amount) !== Number(payment.amount)) {
+            throw new ApiError(400, "Payment amount mismatch. Possible tampering.");
+        }
 
-        const newPeriodEnd = new Date(baseDate);
+        // 5. Calculate new subscription period
+        const isExpired = payment.subscription.currentPeriodEnd < new Date();
+        const baseDate = isExpired ? new Date() : payment.subscription.currentPeriodEnd;
+        let newPeriodEnd = new Date(baseDate);
 
         if (payment.plan === PlanType.MONTHLY) {
-            newPeriodEnd.setMonth(newPeriodEnd.getMonth() + 1);
-
+            newPeriodEnd = addMonths(newPeriodEnd, 1);
         } else if (payment.plan === PlanType.YEARLY) {
-            newPeriodEnd.setFullYear(newPeriodEnd.getFullYear() + 1);
+            newPeriodEnd = addMonths(newPeriodEnd, 12);
         }
 
-        await prisma.$transaction([
-            prisma.billingPayment.update({
-                where: { id: payment.id },
-                data: { status: PaymentStatus.SUCCESS },
-            }),
-            prisma.subscription.update({
+        // 6. Atomic Database Update (Prevents Race Conditions)
+        await prisma.$transaction(async (tx) => {
+            const updatedPayment = await tx.billingPayment.updateMany({
+                where: {
+                    id: payment.id,
+                    status: { in: [PaymentStatus.PENDING, PaymentStatus.FAILED] }
+                },
+                data: {
+                    status: PaymentStatus.SUCCESS,
+                    valId: valId
+                },
+            });
+
+            // If count is 0, another concurrent request beat us to it
+            if (updatedPayment.count === 0) {
+                throw new ApiError(400, "Payment already processed");
+            }
+
+            await tx.subscription.update({
                 where: { id: payment.subscriptionId },
                 data: {
                     plan: payment.plan,
                     status: SubscriptionStatus.ACTIVE,
-                    // If it's an upgrade, keep the start date. If expired, reset start date to now.
-                    currentPeriodStart: isExpired ? new Date() : subscription.currentPeriodStart,
+                    currentPeriodStart: isExpired ? new Date() : payment.subscription.currentPeriodStart,
                     currentPeriodEnd: newPeriodEnd,
                 },
-            }),
-        ]);
+            });
+        });
 
         return { message: "Payment successful, plan upgraded" };
+    }
+
+    // 3b. Mark a pending payment as failed/cancelled (from fail/cancel callbacks)
+    static async markPaymentFailed(tranId: string) {
+        if (!tranId) {
+            return { message: "No transaction id provided" };
+        }
+
+        await prisma.billingPayment.updateMany({
+            where: { tranId, status: PaymentStatus.PENDING },
+            data: { status: PaymentStatus.FAILED },
+        });
+
+        return { message: "Payment marked as failed" };
     }
 
     // 4. Check quota
@@ -135,12 +184,17 @@ export class BillingService {
         if (activePlan === PlanType.YEARLY)
             maxOrders = Infinity;
 
-        // Count confirmed orders in the current period
+        // Count confirmed orders in the current period. Use the same window as
+        // getSubscription so the two endpoints never disagree.
+        const queryStartDate = isExpired
+            ? startOfMonth()
+            : subscription.currentPeriodStart;
+
         const orderCount = await prisma.order.count({
             where: {
                 businessId,
                 status: "CONFIRM",
-                createdAt: { gte: subscription.currentPeriodStart },
+                createdAt: { gte: queryStartDate },
             },
         });
 
@@ -173,11 +227,9 @@ export class BillingService {
         // Note: If the subscription is expired, we are counting from the start of the *new* month,
         // but for simplicity, we count from the last period start or the beginning of the current month.
 
-        const startOfMonth = new Date();
-        startOfMonth.setDate(1);
-        startOfMonth.setHours(0, 0, 0, 0);
-
-        const queryStartDate = isExpired ? startOfMonth : subscription.currentPeriodStart;
+        const queryStartDate = isExpired
+            ? startOfMonth()
+            : subscription.currentPeriodStart;
 
         const ordersUsed = await prisma.order.count({
             where: {

@@ -4,7 +4,7 @@ import { ApiError } from "../../utils/AppError.js";
 
 export class SSLCommerzAdapter {
     private static getBaseUrl() {
-        return env.SSLCOMMERZ_IS_SANDBOX === "true"
+        return env.SSLCOMMERZ_IS_SANDBOX.toLowerCase() === "true"
             ? "https://sandbox.sslcommerz.com"
             : "https://securepay.sslcommerz.com";
     }
@@ -43,7 +43,7 @@ export class SSLCommerzAdapter {
             const response = await axios.post(
                 `${this.getBaseUrl()}/gwprocess/v4/api.php`,
                 data.toString(),
-                { headers: { "Content-Type": "application/x-www-form-urlencoded" } }
+                { headers: { "Content-Type": "application/x-www-form-urlencoded" }, timeout: 15000 }
             );
 
             if (response.data?.status === "SUCCESS") {
@@ -68,6 +68,7 @@ export class SSLCommerzAdapter {
                         store_passwd: env.SSLCOMMERZ_STORE_PASSWORD,
                         format: "json",
                     },
+                    timeout: 15000,
                 }
             );
             return response.data; // Contains status, amount, tran_id, etc.

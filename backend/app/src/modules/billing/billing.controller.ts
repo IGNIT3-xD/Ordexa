@@ -39,15 +39,48 @@ export const checkout = asyncHandler(async (req: Request, res: Response) => {
     res.json(result);
 });
 
+// SSLCommerz may post values as strings or (rarely) arrays.
+const firstString = (value: unknown): string | undefined => {
+    if (typeof value === "string") return value;
+    if (Array.isArray(value)) {
+        return typeof value[0] === "string" ? value[0] : undefined;
+    }
+    return undefined;
+};
+
+const readField = (req: Request, field: string): string | undefined =>
+    firstString(req.body?.[field]) ?? firstString(req.query?.[field]);
+
 export const paymentSuccess = asyncHandler(async (req: Request, res: Response) => {
-    const { val_id, tran_id } = req.body; // SSLCommerz posts this data
-    
-    await BillingService.handlePaymentSuccess(val_id, tran_id);
+    const valId = readField(req, "val_id");
+    const tranId = readField(req, "tran_id");
+
+    if (!valId || !tranId) {
+        return res.redirect(`${env.FRONTEND_URL}/dashboard/billing?status=failed`);
+    }
+
+    await BillingService.handlePaymentSuccess(valId, tranId);
 
     // Redirect the user to your frontend success page
     res.redirect(`${env.FRONTEND_URL}/dashboard/billing?status=success`);
 });
 
 export const paymentFail = asyncHandler(async (req: Request, res: Response) => {
+    const tranId = readField(req, "tran_id");
+
+    if (tranId) {
+        await BillingService.markPaymentFailed(tranId);
+    }
+
     res.redirect(`${env.FRONTEND_URL}/dashboard/billing?status=failed`);
+});
+
+export const paymentCancel = asyncHandler(async (req: Request, res: Response) => {
+    const tranId = readField(req, "tran_id");
+
+    if (tranId) {
+        await BillingService.markPaymentFailed(tranId);
+    }
+
+    res.redirect(`${env.FRONTEND_URL}/dashboard/billing?status=cancelled`);
 });

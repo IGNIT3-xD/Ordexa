@@ -15,11 +15,7 @@ import {
 } from "./business.controller.js";
 import { createBusinessSchema, inviteUserSchema, updateBusinessSchema, updateMemberRoleSchema } from "./business.schema.js";
 import { Role } from "../../../generated/prisma/enums.js";
-
-const validate = (schema: any) => (req: any, res: any, next: any) => {
-    schema.parse({ body: req.body, query: req.query, params: req.params });
-    next();
-};
+import { validate } from "../../middleware/validate.middleware.js";
 
 const router = Router();
 
@@ -49,7 +45,7 @@ router.post("/invitations/accept", protect, acceptInvite);
 router.patch(
     "/current/members/:memberId/role",
     resolveBusiness,
-    requireRole(["OWNER"]),
+    requireRole([Role.OWNER]),
     validate(updateMemberRoleSchema),
     updateMemberRole
 );

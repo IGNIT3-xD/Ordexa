@@ -1,9 +1,10 @@
 import { Router } from "express";
 import { protect } from "../../../middleware/auth.middleware.js";
-import { resolveBusiness } from "../../../middleware/tenant.middleware.js";
+import { requireRole, resolveBusiness } from "../../../middleware/tenant.middleware.js";
 import { connectMeta, metaCallback } from "./meta.controller.js";
 import { handleWebhook, verifyWebhook } from "./webhook.controller.js";
 import { notificationQueue } from "../../../lib/queue.js";
+import { Role } from "../../../../generated/prisma/enums.js";
 
 const router = Router();
 
@@ -11,7 +12,7 @@ const router = Router();
 router.get("/callback", metaCallback);
 
 // The connect route requires the seller to be logged in
-router.get("/connect", protect, resolveBusiness, connectMeta);
+router.get("/connect", protect, resolveBusiness, requireRole([Role.OWNER]), connectMeta);
 
 router.get("/webhook", verifyWebhook);
 router.post("/webhook", handleWebhook);

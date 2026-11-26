@@ -14,6 +14,7 @@ export class MetaAdapter {
                 redirect_uri: env.META_REDIRECT_URI,
                 code,
             },
+            timeout: 15000,
         });
         return response.data.access_token;
     }
@@ -22,6 +23,7 @@ export class MetaAdapter {
     static async getUserPages(userAccessToken: string) {
         const response = await axios.get(`${this.baseUrl}/me/accounts`, {
             params: { access_token: userAccessToken },
+            timeout: 15000,
         });
         return response.data.data;
     }
@@ -38,12 +40,31 @@ export class MetaAdapter {
                 {
                     params: { access_token: pageAccessToken },
                     headers: { "Content-Type": "application/json" },
+                    timeout: 15000,
                 }
             );
             return response.data;
         } catch (error: any) {
             console.error("Meta Send Error:", error.response?.data || error.message);
             throw new ApiError(500, "Failed to send Messenger message");
+        }
+    }
+
+    static async getLongLivedUserToken(shortLivedToken: string) {
+        try {
+            const response = await axios.get(`${this.baseUrl}/oauth/access_token`, {
+                params: {
+                    grant_type: "fb_exchange_token",
+                    client_id: env.META_APP_ID,
+                    client_secret: env.META_APP_SECRET,
+                    fb_exchange_token: shortLivedToken,
+                },
+                timeout: 15000,
+            });
+            return response.data.access_token;
+        } catch (error: any) {
+            console.error("Meta Long-Lived Token Error:", error.response?.data || error.message);
+            throw new ApiError(500, "Failed to exchange for long-lived token");
         }
     }
 }

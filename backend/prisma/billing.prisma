@@ -19,6 +19,7 @@ model BillingPayment {
     amount         Decimal       @db.Decimal(10, 2)
     currency       String        @default("BDT")
     tranId         String        @unique // SSLCommerz Transaction ID
+    valId          String?       @unique
     status         PaymentStatus @default(PENDING)
     plan           PlanType
     createdAt      DateTime      @default(now())

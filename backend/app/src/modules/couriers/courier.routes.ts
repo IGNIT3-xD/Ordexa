@@ -4,15 +4,7 @@ import { resolveBusiness, requireRole } from "../../middleware/tenant.middleware
 import { connectCourier, getConnections } from "./courier.controller.js";
 import { connectCourierSchema } from "./courier.schema.js";
 import { Role } from "../../../generated/prisma/enums.js";
-
-const validate = (schema: any) => (req: any, res: any, next: any) => {
-    const parsed = schema.parse({ body: req.body, query: req.query, params: req.params });
-
-    if (parsed.body)
-        req.body = parsed.body;
-
-    next();
-};
+import { validate } from "../../middleware/validate.middleware.js";
 
 const router = Router();
 router.use(protect);

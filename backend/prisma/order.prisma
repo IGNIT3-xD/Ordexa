@@ -40,11 +40,11 @@ model OrderSubmission {
     status          OrderSubmissionStatus @default(PENDING)
     rejectionReason String?
     customerPsid    String?
-    createdAt DateTime @default(now())
-    business  Business  @relation(fields: [businessId], references: [id], onDelete: Cascade)
-    form      OrderForm @relation(fields: [formId], references: [id], onDelete: Cascade)
-    formToken FormToken @relation(fields: [formTokenId], references: [id], onDelete: Cascade)
-    order     Order?
+    createdAt       DateTime              @default(now())
+    business        Business              @relation(fields: [businessId], references: [id], onDelete: Cascade)
+    form            OrderForm             @relation(fields: [formId], references: [id], onDelete: Cascade)
+    formToken       FormToken             @relation(fields: [formTokenId], references: [id], onDelete: Cascade)
+    order           Order?
 
     @@index([businessId, status])
     @@map("order_submissions")
@@ -54,12 +54,13 @@ model Order {
     id              String      @id @default(uuid())
     businessId      String
     submissionId    String      @unique
-    orderNumber     String
+    orderNumber     String      @unique
     customerName    String
     customerPhone   String
     deliveryAddress String
     totalAmount     Decimal     @db.Decimal(10, 2)
     status          OrderStatus @default(PENDING_CONFIRMATION)
+    invoiceToken    String?     @unique
     invoiceUrl      String?
     createdAt       DateTime    @default(now())
     updatedAt       DateTime    @updatedAt

@@ -1,6 +1,6 @@
 import { type Request, type Response } from "express";
 import { env } from "../../../config/env.js";
-import { prisma } from "../../../lib/prisma.js";
+import crypto from "node:crypto";
 
 // Meta calls this GET endpoint once to verify the webhook
 export const verifyWebhook = (req: Request, res: Response) => {
@@ -17,7 +17,38 @@ export const verifyWebhook = (req: Request, res: Response) => {
 };
 
 // Meta calls this POST endpoint on every message
-export const handleWebhook = async (req: Request, res: Response) => {
+export const handleWebhook = async (req: any, res: Response) => {
+    // 1. Verify Meta Signature
+    const signature = req.headers["x-hub-signature-256"] as string;
+
+    if (!signature) {
+        console.warn("🚨 Missing Meta webhook signature");
+        return res.status(401).send("Missing signature");
+    }
+
+    if (!req.rawBody) {
+        console.error("Raw body not captured. Cannot verify signature.");
+        return res.status(500).send("Internal server error");
+    }
+
+    const expectedSignature = `sha256=${crypto
+        .createHmac("sha256", env.META_APP_SECRET)
+        .update(req.rawBody)
+        .digest("hex")}`;
+
+    // Timing safe comparison prevents timing attacks
+    const signatureBuffer = Buffer.from(signature);
+    const expectedBuffer = Buffer.from(expectedSignature);
+
+    if (
+        signatureBuffer.length !== expectedBuffer.length ||
+        !crypto.timingSafeEqual(signatureBuffer, expectedBuffer)
+    ) {
+        // console.warn("🚨 Invalid Meta webhook signature");
+        return res.status(401).send("Invalid signature");
+    }
+
+    // 2. Process the verified payload
     const body = req.body;
 
     if (body.object === "page") {
@@ -27,11 +58,10 @@ export const handleWebhook = async (req: Request, res: Response) => {
             for (const webhookEvent of entry.messaging) {
                 const senderPsid = webhookEvent.sender.id;
 
-                // If the customer sent a message, you can log it or match it.
-                // For example, you could look for a phone number in the message text to link the PSID.
-                console.log(`Received message from PSID: ${senderPsid} on Page: ${pageId}`);
+                // console.log(`✅ Verified message from PSID: ${senderPsid} on Page: ${pageId}`);
 
-                // Here you would find the business by Page ID and save the PSID to the Customer record.
+                // Find business by pageId and attach PSID to Customer/Submission
+                // (You can implement the logic to link PSID to a submission here)
             }
         }
         res.status(200).send("EVENT_RECEIVED");

@@ -28,23 +28,9 @@ import {
     getProductsQuerySchema,
 } from "./product.schema.js";
 import { Role } from "../../../generated/prisma/enums.js";
+import { validate } from "../../middleware/validate.middleware.js";
+import { secureUpload } from "../../middleware/upload.middleware.js";
 
-const validate = (schema: any) => (req: any, res: any, next: any) => {
-    const parsed = schema.parse({
-        body: req.body,
-        query: req.query,
-        params: req.params
-    });
-
-    // Assign the parsed body (this is safe because body is mutable)
-    if (parsed.body) req.body = parsed.body;
-    if (parsed.query) (req as any).validatedQuery = parsed.query;
-    if (parsed.params) (req as any).validatedParams = parsed.params;
-
-    next();
-};
-
-const upload = multer({ storage: multer.memoryStorage() });
 const router = Router();
 
 // All product routes require authentication and a verified business context
@@ -59,7 +45,7 @@ router.get("/:productId", getProduct);
 router.post(
     "/",
     requireRole([Role.OWNER, Role.MANAGER]),
-    upload.array("images", 5),
+    secureUpload.array("images", 5),
     validate(createProductSchema),
     createProduct
 );
@@ -84,7 +70,7 @@ router.delete("/:productId/images/:imageId", requireRole([Role.OWNER, Role.MANAG
 router.post(
     "/:productId/images",
     requireRole([Role.OWNER, Role.MANAGER]),
-    upload.array("images", 5),
+    secureUpload.array("images", 5),
     uploadImages
 );
 

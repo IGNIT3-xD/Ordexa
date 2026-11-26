@@ -30,7 +30,13 @@ export const updateBusiness = asyncHandler(async (req: Request, res: Response) =
     if (!req.tenant)
         throw new ApiError(500, "Tenant context missing");
 
-    const updated = await BusinessService.updateBusiness(req.tenant.businessId, req.body);
+    const { name, currency, timezone } = req.body;
+
+    const updated = await BusinessService.updateBusiness(
+        req.tenant.businessId,
+        { name, currency, timezone } // <-- Pass the safe object
+    );
+
     res.json(updated);
 });
 

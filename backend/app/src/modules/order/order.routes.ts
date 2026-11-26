@@ -6,21 +6,14 @@ import { getOrdersQuerySchema, updateOrderStatusSchema } from "./order.schema.js
 import { Role } from "../../../generated/prisma/enums.js";
 import { enforceQuota } from "../../middleware/quota.middleware.js";
 import { downloadInvoice } from "./public-invoice.controller.js";
+import rateLimit from "express-rate-limit";
+import { validate } from "../../middleware/validate.middleware.js";
 
-const validate = (schema: any) => (req: any, res: any, next: any) => {
-    const parsed = schema.parse({ body: req.body, query: req.query, params: req.params });
-
-    if (parsed.body)
-        req.body = parsed.body;
-
-    if (parsed.query)
-        (req as any).validatedQuery = parsed.query;
-
-    if (parsed.params)
-        (req as any).validatedParams = parsed.params;
-
-    next();
-};
+const invoiceLimiter = rateLimit({
+    windowMs: 15 * 60 * 1000,
+    max: 10,
+    message: { error: "Too many invoice requests, please try again later." },
+});
 
 const router = Router();
 
@@ -38,6 +31,6 @@ router.patch(
 );
 
 export const invoiceRouter = Router();
-invoiceRouter.get("/:orderId", downloadInvoice);
+invoiceRouter.get("/:token", invoiceLimiter, downloadInvoice);
 
 export default router;

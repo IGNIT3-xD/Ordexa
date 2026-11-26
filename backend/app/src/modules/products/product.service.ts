@@ -150,26 +150,26 @@ export class ProductService {
         });
     }
 
-    static async adjustStock(businessId: string, variantId: string, data: { quantity: number; reason: string; actorId: string }) {
-        // Verify variant exists and belongs to this business
-        const variant = await prisma.productVariant.findFirst({
-            where: { id: variantId, businessId },
-        });
-
-        if (!variant)
-            throw new ApiError(404, "Variant not found");
-
-        // Prevent stock from going below zero
-        if (variant.stock + data.quantity < 0) {
-            throw new ApiError(400, `Cannot deduct stock. Only ${variant.stock} available.`);
-        }
-
-        // Update stock AND log the movement inside a transaction
-        return prisma.$transaction(async (tx: any) => {
-            const updated = await tx.productVariant.update({
-                where: { id: variantId },
-                data: { stock: { increment: data.quantity } },
+    static async adjustStock(
+        businessId: string,
+        variantId: string,
+        data: { quantity: number; reason: string; actorId: string }
+    ) {
+        return prisma.$transaction(async (tx) => {
+            const result = await tx.productVariant.updateMany({
+                where: {
+                    id: variantId,
+                    businessId,
+                    stock: { gte: -data.quantity },
+                },
+                data: {
+                    stock: { increment: data.quantity },
+                },
             });
+
+            if (result.count === 0) {
+                throw new ApiError(400, "Cannot adjust stock. Variant not found or insufficient stock available.");
+            }
 
             await tx.stockMovement.create({
                 data: {
@@ -180,7 +180,7 @@ export class ProductService {
                 },
             });
 
-            return updated;
+            return tx.productVariant.findUnique({ where: { id: variantId } });
         });
     }
 
