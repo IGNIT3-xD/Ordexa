@@ -38,6 +38,7 @@ export function createApp() {
             req.rawBody = buf;
         }
     }));
+    app.set("trust proxy", 1);
 
     // Routes
     app.get("/api", (_req, res) => {
