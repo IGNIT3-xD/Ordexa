@@ -22,6 +22,7 @@ export class SteadfastAdapter {
                         "Secret-Key": credentials.secretKey,
                         "Content-Type": "application/json",
                     },
+                    timeout: 15000,
                 }
             );
 
@@ -45,6 +46,7 @@ export class SteadfastAdapter {
                         "Api-Key": credentials.apiKey,
                         "Secret-Key": credentials.secretKey,
                     },
+                    timeout: 15000,
                 }
             );
 

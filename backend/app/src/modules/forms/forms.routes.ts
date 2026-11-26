@@ -12,20 +12,7 @@ import {
 import { createFormSchema, submitOrderSchema, updateFormStatusSchema } from "./forms.schema.js";
 import { Role } from "../../../generated/prisma/enums.js";
 import rateLimit from "express-rate-limit";
-
-const validate = (schema: any) => (req: any, res: any, next: any) => {
-    const parsed = schema.parse({ body: req.body, query: req.query, params: req.params });
-
-    if (parsed.body)
-        req.body = parsed.body;
-
-    if (parsed.query)
-        (req as any).validatedQuery = parsed.query;
-
-    if (parsed.params)
-        (req as any).validatedParams = parsed.params;
-    next();
-};
+import { validate } from "../../middleware/validate.middleware.js";
 
 const publicSubmitLimiter = rateLimit({
     windowMs: 15 * 60 * 1000,

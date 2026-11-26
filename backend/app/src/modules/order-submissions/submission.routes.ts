@@ -10,20 +10,7 @@ import {
 } from "./submission.controller.js";
 import { getSubmissionsQuerySchema, rejectSubmissionSchema, updateSubmissionStatusSchema } from "./submission.schema.js";
 import { Role } from "../../../generated/prisma/enums.js";
-
-const validate = (schema: any) => (req: any, res: any, next: any) => {
-    const parsed = schema.parse({ body: req.body, query: req.query, params: req.params });
-    if (parsed.body)
-        req.body = parsed.body;
-
-    if (parsed.query)
-        (req as any).validatedQuery = parsed.query;
-
-    if (parsed.params)
-        (req as any).validatedParams = parsed.params;
-
-    next();
-};
+import { validate } from "../../middleware/validate.middleware.js";
 
 const router = Router();
 

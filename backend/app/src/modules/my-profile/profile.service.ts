@@ -16,20 +16,34 @@ export class UserService {
         return user;
     }
 
-    static async updateProfile(userId: string, data: { name?: string; email?: string }) {
+    static async updateProfile(
+        userId: string,
+        data: { name?: string; email?: string; currentPassword?: string }
+    ) {
         const currentUser = await prisma.user.findUnique({ where: { id: userId } });
-        if (!currentUser) throw new ApiError(404, "User not found");
+        if (!currentUser)
+            throw new ApiError(404, "User not found");
 
         let isVerified = currentUser.isVerified;
+        let emailChanged = false;
 
-        // If email is changing, check if it's taken and reset verification
+        // Handle Email Change Security
         if (data.email && data.email !== currentUser.email) {
+            // Verify password
+            const valid = await bcrypt.compare(data.currentPassword || "", currentUser.password);
+            if (!valid)
+                throw new ApiError(401, "Incorrect password. Cannot change email.");
+
+            // Check if new email is already taken
             const existing = await prisma.user.findUnique({ where: { email: data.email } });
-            if (existing) throw new ApiError(409, "Email already in use");
-            
+            if (existing)
+                throw new ApiError(409, "Email already in use");
+
             isVerified = false;
+            emailChanged = true;
         }
 
+        // 2. Update User
         const updatedUser = await prisma.user.update({
             where: { id: userId },
             data: {
@@ -40,14 +54,16 @@ export class UserService {
             select: { id: true, email: true, name: true, profilePic: true, isVerified: true },
         });
 
-        // If email changed, send a new verification code
-        if (!isVerified && data.email) {
-            const code = Math.floor(100000 + Math.random() * 900000).toString();
+        // If email changed, force logout and send new code
+        if (emailChanged) {
+            // Invalidate all sessions (forces re-login)
+            await prisma.userSession.deleteMany({ where: { userId } });
 
+            // Generate & Send new verification code
+            const code = Math.floor(100000 + Math.random() * 900000).toString();
             await prisma.verificationToken.create({
                 data: { token: code, userId, expiresAt: new Date(Date.now() + 15 * 60 * 1000) },
             });
-
             await sendVerificationEmail(updatedUser.email, code, updatedUser.name || undefined);
         }
 
@@ -56,7 +72,7 @@ export class UserService {
 
     static async updateProfilePic(userId: string, fileBuffer: Buffer) {
         const profilePic = await uploadToCloudinary(fileBuffer);
-        
+
         return prisma.user.update({
             where: { id: userId },
             data: { profilePic },

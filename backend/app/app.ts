@@ -27,12 +27,16 @@ export function createApp() {
     const app = express();
 
     app.disable("x-powered-by");
-    app.use(express.json());
     app.use(express.urlencoded({ extended: true }));
     app.use(cookieParser())
     app.use(cors({
         origin: env.FRONTEND_URL || "http://localhost:3000",
         credentials: true,
+    }));
+    app.use(express.json({
+        verify: (req: any, res, buf) => {
+            req.rawBody = buf;
+        }
     }));
 
     // Routes

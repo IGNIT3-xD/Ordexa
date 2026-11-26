@@ -42,6 +42,8 @@ const EnvSchema = z.object({
 
     FRAUDBD_API_KEY: z.string().min(1),
     FRAUDBD_API_URL: z.url(),
+
+    STEADFAST_WEBHOOK_SECRET: z.string().min(1),
 });
 
 const parsed = EnvSchema.safeParse(process.env);

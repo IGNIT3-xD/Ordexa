@@ -2,8 +2,8 @@ import { prisma } from "../../lib/prisma.js";
 import { ApiError } from "../../utils/AppError.js";
 import { OrderStatus } from "../../../generated/prisma/enums.js";
 import { notificationQueue } from "../../lib/queue.js";
-import { InvoiceService } from "./invoice.service.js";
 import { env } from "../../config/env.js";
+import crypto from "node:crypto";
 
 export class OrderService {
     static async updateOrderStatus(businessId: string, orderId: string, newStatus: OrderStatus, actorId: string) {
@@ -70,18 +70,24 @@ export class OrderService {
             }
 
             let invoiceUrl = order.invoiceUrl;
-            if (newStatus === OrderStatus.CONFIRM && !invoiceUrl) {
-                invoiceUrl = `${env.BACKEND_URL}/api/public/invoices/${orderId}`;
+            let invoiceToken = order.invoiceToken;
+
+            // Generate the capability token once. Gating on the token (not the
+            // URL) also heals legacy orders that still point at the old URL.
+            if (newStatus === OrderStatus.CONFIRM && !invoiceToken) {
+                invoiceToken = crypto.randomBytes(32).toString("hex");
+                invoiceUrl = `${env.BACKEND_URL}/api/public/invoices/${invoiceToken}`;
             }
 
             const updatedOrder = await tx.order.update({
                 where: { id: orderId },
                 data: {
                     status: newStatus,
-                    invoiceUrl: invoiceUrl
+                    invoiceUrl: invoiceUrl,
+                    invoiceToken: invoiceToken,
                 },
             });
-
+            
             if (newStatus === OrderStatus.CONFIRM) {
                 await notificationQueue.add("send-order-confirmation", {
                     businessId,

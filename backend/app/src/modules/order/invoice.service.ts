@@ -3,9 +3,9 @@ import { prisma } from "../../lib/prisma.js";
 import { ApiError } from "../../utils/AppError.js";
 
 export class InvoiceService {
-    static async generateInvoiceBuffer(orderId: string): Promise<{ buffer: Buffer, fileName: string }> {
+    static async generateInvoiceBuffer(invoiceToken: string): Promise<{ buffer: Buffer, fileName: string }> {
         const order = await prisma.order.findUnique({
-            where: { id: orderId },
+            where: { invoiceToken },
             include: {
                 business: true,
                 items: true,
@@ -13,7 +13,8 @@ export class InvoiceService {
             },
         });
 
-        if (!order) throw new ApiError(404, "Order not found");
+        if (!order)
+            throw new ApiError(404, "Order not found");
 
         const pdfBuffer = await this.createPdfBuffer(order);
         const fileName = `invoice-${order.orderNumber}.pdf`;

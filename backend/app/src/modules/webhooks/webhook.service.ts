@@ -1,78 +1,120 @@
+import crypto from "node:crypto";
 import { prisma } from "../../lib/prisma.js";
 import { ShipmentStatus } from "../../../generated/prisma/enums.js";
+import { Prisma } from "../../../generated/prisma/client.js";
+
+const TERMINAL_STATUSES: ShipmentStatus[] = [
+    ShipmentStatus.DELIVERED,
+    ShipmentStatus.CANCELLED,
+];
+
+const mapStatus = (raw: string | undefined, current: ShipmentStatus): ShipmentStatus => {
+    const normalized = raw?.toLowerCase() || "";
+
+    if (normalized.includes("delivered")) return ShipmentStatus.DELIVERED;
+    if (normalized.includes("cancel")) return ShipmentStatus.CANCELLED;
+    if (normalized.includes("transit") || normalized.includes("hold")) return ShipmentStatus.IN_TRANSIT;
+    if (normalized.includes("pending") || normalized.includes("booked")) return ShipmentStatus.BOOKED;
+
+    return current;
+};
+
+const parseEventTime = (raw: string | number | undefined): Date => {
+    if (raw !== undefined) {
+        const parsed = new Date(raw);
+        if (!Number.isNaN(parsed.getTime())) return parsed;
+    }
+    return new Date();
+};
 
 export class WebhookService {
-    static async handleSteadfastUpdate(payload: any) {
-        // Steadfast payload typically looks like:
-        // { consignment_id: 12345, invoice: "ORD-A1B2C3", status: "in_transit", tracking_message: "Received at sorting hub", updated_at: "..." }
+    static async handleSteadfastUpdate(payload: {
+        consignment_id?: string | number;
+        invoice?: string;
+        status: string;
+        tracking_message?: string;
+        updated_at?: string | number;
+    }) {
+        const { consignment_id, invoice, status, tracking_message, updated_at } = payload;
 
-        const { consignment_id, invoice, status, tracking_message } = payload;
+        let shipment = null;
 
-        if (!consignment_id && !invoice) {
-            console.warn("Webhook missing consignment_id and invoice", payload);
-            return;
+        // Resolve by a single trusted identifier. consignmentId is globally
+        // unique; orderNumber is now globally unique as well.
+        if (consignment_id != null) {
+            shipment = await prisma.shipment.findFirst({
+                where: {
+                    consignmentId: consignment_id.toString(),
+                    provider: "STEADFAST",
+                },
+            });
+        } else if (invoice) {
+            shipment = await prisma.shipment.findFirst({
+                where: {
+                    order: { orderNumber: invoice },
+                    provider: "STEADFAST",
+                },
+            });
         }
-
-        // 1. Find the shipment
-        const shipment = await prisma.shipment.findFirst({
-            where: {
-                OR: [
-                    { consignmentId: consignment_id?.toString() },
-                    { order: { orderNumber: invoice } }
-                ]
-            }
-        });
 
         if (!shipment) {
-            // console.warn(`Shipment not found for webhook: ${consignment_id} / ${invoice}`);
             return;
         }
 
-        // 2. Map Steadfast status to our internal ShipmentStatus enum
-        let newStatus = shipment.status;
-        const normalizedStatus = status?.toLowerCase() || "";
+        const newStatus = mapStatus(status, shipment.status);
 
-        if (normalizedStatus.includes("delivered"))
-            newStatus = ShipmentStatus.DELIVERED;
+        // State machine: never move a terminal shipment back to an active state.
+        if (TERMINAL_STATUSES.includes(shipment.status) && newStatus !== shipment.status) {
+            console.warn(
+                `⚠️ Ignoring webhook regression for shipment ${shipment.id}: ${shipment.status} -> ${newStatus}`
+            );
+            return;
+        }
 
-        else if (normalizedStatus.includes("cancel"))
-            newStatus = ShipmentStatus.CANCELLED;
+        const eventTime = parseEventTime(updated_at);
 
-        else if (normalizedStatus.includes("transit") || normalizedStatus.includes("hold"))
-            newStatus = ShipmentStatus.IN_TRANSIT;
-        
-        else if (normalizedStatus.includes("pending") || normalizedStatus.includes("booked")) 
-            newStatus = ShipmentStatus.BOOKED;
+        // Idempotency key derived from the event identity. When the provider
+        // does not send a timestamp we fall back to status + message so that
+        // retried deliveries are still deduplicated.
+        const dedupeKey = crypto
+            .createHash("sha256")
+            .update(
+                [
+                    shipment.id,
+                    newStatus,
+                    tracking_message ?? "",
+                    updated_at !== undefined ? String(updated_at) : "",
+                ].join("|")
+            )
+            .digest("hex");
 
-        // 3. Prevent duplicate events if Steadfast retries the webhook
-        const existingEvent = await prisma.shipmentEvent.findFirst({
-            where: {
-                shipmentId: shipment.id,
-                status: tracking_message || newStatus, // Using description to deduplicate
+        try {
+            await prisma.$transaction(async (tx) => {
+                await tx.shipment.update({
+                    where: { id: shipment.id },
+                    data: { status: newStatus },
+                });
+
+                await tx.shipmentEvent.create({
+                    data: {
+                        shipmentId: shipment.id,
+                        status: newStatus,
+                        description: tracking_message || `Status updated to ${newStatus}`,
+                        eventTime,
+                        dedupeKey,
+                    },
+                });
+            });
+        } catch (error) {
+            // A unique violation on dedupeKey means this exact event was
+            // already processed (including concurrent retries).
+            if (
+                error instanceof Prisma.PrismaClientKnownRequestError &&
+                error.code === "P2002"
+            ) {
+                return;
             }
-        });
-
-        if (existingEvent) {
-            console.log("Duplicate webhook received, ignoring.");
-            return;
+            throw error;
         }
-
-        // 4. Update Shipment and create Event in a transaction
-        await prisma.$transaction([
-            prisma.shipment.update({
-                where: { id: shipment.id },
-                data: { status: newStatus },
-            }),
-            prisma.shipmentEvent.create({
-                data: {
-                    shipmentId: shipment.id,
-                    status: newStatus,
-                    description: tracking_message || `Status updated to ${newStatus}`,
-                    eventTime: new Date(), // Or use payload.updated_at if provided
-                },
-            })
-        ]);
-
-        // console.log(`📦 Webhook processed: Order ${invoice} is now ${newStatus}`);
     }
 }

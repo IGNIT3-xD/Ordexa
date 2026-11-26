@@ -2,8 +2,17 @@ import { z } from "zod";
 
 export const updateProfileSchema = z.object({
     body: z.object({
-        name: z.string("Please, provide a valid name").min(4).max(50).optional(),
-        email: z.email({ error: "Please provide a valid email address" }).optional(),
+        name: z.string().min(2).optional(),
+        email: z.string().email().optional(),
+        currentPassword: z.string().optional(), // <-- Add this
+    }).refine((data) => {
+        // If email is being changed, currentPassword MUST be provided
+        if (data.email && !data.currentPassword)
+            return false;
+        return true;
+    }, {
+        message: "Current password is required to change email",
+        path: ["currentPassword"],
     }),
 });
 

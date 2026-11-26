@@ -4,21 +4,7 @@ import { resolveBusiness, requireRole } from "../../middleware/tenant.middleware
 import { bookShipment, listShipments, getShipment, retryShipment, getPublicTracking } from "./shipments.controller.js";
 import { getShipmentsQuerySchema } from "./shipments.schema.js";
 import { Role } from "../../../generated/prisma/enums.js";
-
-const validate = (schema: any) => (req: any, res: any, next: any) => {
-    const parsed = schema.parse({ body: req.body, query: req.query, params: req.params });
-
-    if (parsed.body)
-        req.body = parsed.body;
-
-    if (parsed.query)
-        (req as any).validatedQuery = parsed.query;
-
-    if (parsed.params)
-        (req as any).validatedParams = parsed.params;
-
-    next();
-};
+import { validate } from "../../middleware/validate.middleware.js";
 
 const router = Router();
 router.use(protect);

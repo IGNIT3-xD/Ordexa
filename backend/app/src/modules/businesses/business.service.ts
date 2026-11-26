@@ -2,6 +2,7 @@ import { currency, InvitationStatus, PlanType, Role, SubscriptionStatus } from "
 import { sendInviteEmail } from "../../lib/mailer.js";
 import { prisma } from "../../lib/prisma.js";
 import { ApiError } from "../../utils/AppError.js";
+import { addMonths } from "../../utils/date.js";
 import crypto from "node:crypto";
 
 export class BusinessService {
@@ -29,8 +30,7 @@ export class BusinessService {
             });
 
             // Automatically create the FREE subscription
-            const periodEnd = new Date();
-            periodEnd.setMonth(periodEnd.getMonth() + 1);
+            const periodEnd = addMonths(new Date(), 1);
 
             await tx.subscription.create({
                 data: {
@@ -73,10 +73,17 @@ export class BusinessService {
         return business;
     }
 
-    static async updateBusiness(businessId: string, data: { name?: string; currency?: currency; timezone?: string }) {
+    static async updateBusiness(
+        businessId: string,
+        data: { name?: string; currency?: currency; timezone?: string }
+    ) {
         return prisma.business.update({
             where: { id: businessId },
-            data,
+            data: {
+                name: data.name,
+                currency: data.currency,
+                timezone: data.timezone,
+            },
         });
     }
 
