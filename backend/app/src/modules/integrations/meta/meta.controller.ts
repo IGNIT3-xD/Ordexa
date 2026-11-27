@@ -77,6 +77,12 @@ export const metaCallback = asyncHandler(async (req: Request, res: Response) => 
             },
         });
 
+        try {
+            await MetaAdapter.subscribeAppToPage(selectedPage.id, selectedPage.access_token);
+        } catch (error) {
+            console.error("Webhook subscription failed:", error);
+        }
+
         res.redirect(`${env.FRONTEND_URL}/dashboard/integrations?status=success`);
     } catch (err) {
         console.error("OAuth callback error:", err);

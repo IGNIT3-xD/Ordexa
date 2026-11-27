@@ -83,84 +83,84 @@ export class SubmissionService {
         for (let attempt = 1; attempt <= MAX_ATTEMPTS; attempt++) {
             try {
                 return await prisma.$transaction(async (tx: any) => {
-            // 1. Fetch submission
-            const submission = await tx.orderSubmission.findFirst({
-                where: { id: submissionId, businessId },
-            });
+                    // 1. Fetch submission
+                    const submission = await tx.orderSubmission.findFirst({
+                        where: { id: submissionId, businessId },
+                    });
 
-            if (!submission)
-                throw new ApiError(404, "Submission not found");
+                    if (!submission)
+                        throw new ApiError(404, "Submission not found");
 
-            if (submission.status === OrderSubmissionStatus.CONVERTED) {
-                throw new ApiError(400, "Submission already converted");
-            }
+                    if (submission.status === OrderSubmissionStatus.CONVERTED) {
+                        throw new ApiError(400, "Submission already converted");
+                    }
 
-            if (submission.status === OrderSubmissionStatus.REJECTED) {
-                throw new ApiError(400, "Cannot convert a rejected submission. Please set it back to PENDING first.");
-            }
+                    if (submission.status === OrderSubmissionStatus.REJECTED) {
+                        throw new ApiError(400, "Cannot convert a rejected submission. Please set it back to PENDING first.");
+                    }
 
-            // 2. Revalidate items against current database state
-            const items = submission.items as { variantId: string; quantity: number }[];
-            const variantIds = items.map((i) => i.variantId);
+                    // 2. Revalidate items against current database state
+                    const items = submission.items as { variantId: string; quantity: number }[];
+                    const variantIds = items.map((i) => i.variantId);
 
-            const variants = await tx.productVariant.findMany({
-                where: { id: { in: variantIds }, businessId, isDeleted: false },
-                include: { product: true },
-            });
+                    const variants = await tx.productVariant.findMany({
+                        where: { id: { in: variantIds }, businessId, isDeleted: false },
+                        include: { product: true },
+                    });
 
-            if (variants.length !== variantIds.length) {
-                throw new ApiError(400, "One or more items in this submission are no longer available");
-            }
+                    if (variants.length !== variantIds.length) {
+                        throw new ApiError(400, "One or more items in this submission are no longer available");
+                    }
 
-            // 3. Calculate totals and prepare OrderItems (Snapshotting)
-            let totalAmount = 0;
-            const orderItemsData = [];
+                    // 3. Calculate totals and prepare OrderItems (Snapshotting)
+                    let totalAmount = 0;
+                    const orderItemsData = [];
 
-            for (const item of items) {
-                const variant = variants.find((v: any) => v.id === item.variantId);
-                if (!variant || variant.product.isDeleted) {
-                    throw new ApiError(400, `Product ${variant?.product.name} is archived or deleted`);
-                }
+                    for (const item of items) {
+                        const variant = variants.find((v: any) => v.id === item.variantId);
+                        if (!variant || variant.product.isDeleted) {
+                            throw new ApiError(400, `Product ${variant?.product.name} is archived or deleted`);
+                        }
 
-                const lineTotal = Number(variant.price) * item.quantity;
-                totalAmount += lineTotal;
+                        const lineTotal = Number(variant.price) * item.quantity;
+                        totalAmount += lineTotal;
 
-                orderItemsData.push({
-                    variantId: variant.id,
-                    productName: variant.product.name,
-                    variantName: `${variant.color || ""} / ${variant.size || ""}`.trim(),
-                    unitPrice: variant.price,
-                    quantity: item.quantity,
-                    lineTotal: lineTotal,
-                });
-            }
+                        orderItemsData.push({
+                            variantId: variant.id,
+                            productName: variant.product.name,
+                            variantName: `${variant.color || ""} / ${variant.size || ""}`.trim(),
+                            unitPrice: variant.price,
+                            quantity: item.quantity,
+                            lineTotal: lineTotal,
+                        });
+                    }
 
-            // 4. Generate a globally-unique human-readable Order Number
-            const orderNumber = `ORD-${crypto.randomBytes(8).toString("hex").toUpperCase()}`;
+                    // 4. Generate a globally-unique human-readable Order Number
+                    const orderNumber = `ORD-${crypto.randomBytes(8).toString("hex").toUpperCase()}`;
 
-            // 5. Create the Order and OrderItems
-            const order = await tx.order.create({
-                data: {
-                    businessId,
-                    submissionId: submission.id,
-                    orderNumber,
-                    customerName: submission.customerName,
-                    customerPhone: submission.customerPhone,
-                    deliveryAddress: submission.deliveryAddress,
-                    totalAmount,
-                    status: OrderStatus.PENDING_CONFIRMATION,
-                    items: {
-                        create: orderItemsData,
-                    },
-                },
-                include: { items: true },
-            });
+                    // 5. Create the Order and OrderItems
+                    const order = await tx.order.create({
+                        data: {
+                            businessId,
+                            submissionId: submission.id,
+                            orderNumber,
+                            customerName: submission.customerName,
+                            customerPhone: submission.customerPhone,
+                            deliveryAddress: submission.deliveryAddress,
+                            totalAmount,
+                            status: OrderStatus.PENDING_CONFIRMATION,
+                            items: {
+                                create: orderItemsData,
+                            }
+                        },
+                        include: { items: true },
+                    });
 
-            // 6. Mark submission as CONVERTED
-            await tx.orderSubmission.update({
-                where: { id: submission.id },
-                data: { status: OrderSubmissionStatus.CONVERTED },
-            });
+                    // 6. Mark submission as CONVERTED
+                    await tx.orderSubmission.update({
+                        where: { id: submission.id },
+                        data: { status: OrderSubmissionStatus.CONVERTED },
+                    });
 
                     return order;
                 });

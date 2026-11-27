@@ -53,15 +53,19 @@ export const handleWebhook = async (req: any, res: Response) => {
 
     if (body.object === "page") {
         for (const entry of body.entry) {
-            const pageId = entry.id;
+            if (!entry.messaging) continue;
 
             for (const webhookEvent of entry.messaging) {
-                const senderPsid = webhookEvent.sender.id;
+                if (webhookEvent.message) {
+                    const senderPsid = webhookEvent.sender.id;
+                    const pageId = webhookEvent.recipient.id;
+                    const messageText = webhookEvent.message.text;
 
-                // console.log(`✅ Verified message from PSID: ${senderPsid} on Page: ${pageId}`);
-
-                // Find business by pageId and attach PSID to Customer/Submission
-                // (You can implement the logic to link PSID to a submission here)
+                    console.log(`\n\n🎯🎯🎯 [WEBHOOK] RECEIVED MESSAGE!`);
+                    console.log(`📱 Sender PSID: ${senderPsid}`);
+                    console.log(`📄 Text: "${messageText}"`);
+                    console.log(`🏢 Page ID: ${pageId}\n\n`);
+                }
             }
         }
         res.status(200).send("EVENT_RECEIVED");
