@@ -56,7 +56,9 @@ export const errorHandler: ErrorRequestHandler = (err, _req, res, _next) => {
         message = err.message;
     }
 
-    if (process.env.NODE_ENV === "development") {
+    // Unexpected errors (anything that isn't an operational ApiError) are always
+    // logged so a bare 500 can be traced back to its source in production.
+    if (err instanceof ApiError ? !err.isOperational : true) {
         console.error("🔥 [Error]:", err);
     }
 

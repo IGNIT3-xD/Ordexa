@@ -14,6 +14,7 @@ export const submitOrderSchema = z.object({
         deliveryAddress: z.string().min(5, { error: "Full address is required" }),
         // CRITICAL: We only accept variantId and quantity. 
         // The client CANNOT send prices. The server calculates it.
+        psid: z.string().optional(),
         items: z.array(
             z.object({
                 variantId: z.string(),

@@ -5,6 +5,25 @@ import { ApiError } from "../../../utils/AppError.js";
 export class MetaAdapter {
     private static baseUrl = "https://graph.facebook.com/v20.0";
 
+    static async subscribeAppToPage(pageId: string, pageAccessToken: string) {
+        try {
+            const response = await axios.post(
+                `${this.baseUrl}/${pageId}/subscribed_apps`,
+                {},
+                {
+                    params: { access_token: pageAccessToken },
+                    headers: { "Content-Type": "application/json" },
+                    timeout: 15000,
+                }
+            );
+            console.log(`✅ Successfully subscribed app to Page: ${pageId}`);
+            return response.data;
+        } catch (error: any) {
+            console.error(`❌ Failed to subscribe app to Page ${pageId}:`, error.response?.data || error.message);
+            throw new ApiError(500, "Failed to subscribe to Facebook Page webhooks");
+        }
+    }
+
     // 1. Exchange the code for a User Access Token
     static async getAccessToken(code: string) {
         const response = await axios.get(`${this.baseUrl}/oauth/access_token`, {

@@ -1,7 +1,6 @@
 import crypto from "node:crypto";
 import { prisma } from "../../lib/prisma.js";
 import { ApiError } from "../../utils/AppError.js";
-import { ProductStatus } from "../../../generated/prisma/enums.js";
 
 export class FormService {
     static async createForm(businessId: string, data: { name: string; description?: string }) {
@@ -139,6 +138,7 @@ export class FormService {
                     formTokenId: token.id,
                     customerName: data.customerName,
                     customerPhone: data.customerPhone,
+                    customerPsid: data.psid || null,
                     deliveryAddress: data.deliveryAddress,
                     items: data.items,
                 },

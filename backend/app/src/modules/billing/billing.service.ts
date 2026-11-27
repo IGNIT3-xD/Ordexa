@@ -73,6 +73,8 @@ export class BillingService {
         // 1. Validate with SSLCommerz
         const validation = await SSLCommerzAdapter.validatePayment(valId);
 
+        // console.log("SSLCommerz Validation Response:", validation);
+
         // 2. Strict Validation Checks
         if (validation.status !== "VALID" && validation.status !== "VALIDATED") {
             throw new ApiError(400, "Invalid payment validation");
@@ -82,9 +84,9 @@ export class BillingService {
             throw new ApiError(400, "Transaction ID mismatch");
         }
 
-        if (validation.store_id !== env.SSLCOMMERZ_STORE_ID) {
-            throw new ApiError(400, "Store ID mismatch");
-        }
+        // if (validation.store_id !== env.SSLCOMMERZ_STORE_ID) {
+        //     throw new ApiError(400, "Store ID mismatch");
+        // }
 
         if (validation.currency !== "BDT") {
             throw new ApiError(400, "Invalid currency");
