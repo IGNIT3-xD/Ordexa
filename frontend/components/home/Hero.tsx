@@ -5,12 +5,11 @@ import Image from 'next/image';
 export const Hero = () => {
     return (
         // Main wrapper: relative positioning, min-height, and dark background fallback
-        <section className="relative isolate min-h-screen w-full overflow-hidden px-6 py-20 lg:px-8">
-
+        <section className="relative isolate min-h-screen w-full overflow-hidden px-6 py-24 lg:px-8">
             {/* LightRays Background: absolute, covers entire screen, sits behind */}
             <div className="absolute inset-0 z-0 pointer-events-none">
                 <LightRays
-                    raysOrigin="top-left"
+                    raysOrigin="top-center"
                     raysColor="#FFE6A6"
                     raysSpeed={1}
                     lightSpread={0.5}
