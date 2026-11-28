@@ -6,7 +6,6 @@ import { getMessages } from "next-intl/server";
 import { hasLocale, NextIntlClientProvider } from "next-intl";
 import { notFound } from "next/navigation";
 import { routing } from "@/i18n/routing";
-import { LocaleSwitcher } from "@/components/shared/locale-switcher";
 
 const inter = Inter({
   subsets: ["latin"],
@@ -57,6 +56,7 @@ export default async function RootLayout({
   return (
     <html
       lang={locale}
+      suppressHydrationWarning
       className={cn(
         "h-full antialiased",
         raleway.variable,
@@ -68,7 +68,6 @@ export default async function RootLayout({
       <body className="min-h-full">
         <NextIntlClientProvider messages={messages}>
           {children}
-          <LocaleSwitcher />
         </NextIntlClientProvider>
       </body>
     </html>

@@ -18,6 +18,15 @@ const nextConfig: NextConfig = {
       },
     },
   },
+  images: {
+    remotePatterns: [
+      {
+        protocol: 'https',
+        hostname: 'cdn.21st.dev',
+        port: '',
+      },
+    ],
+  },
 };
 
 export default withNextIntl(nextConfig);
